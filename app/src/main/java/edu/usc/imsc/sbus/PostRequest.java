@@ -1,6 +1,8 @@
 package edu.usc.imsc.sbus;
 
 import android.os.AsyncTask;
+import android.util.JsonReader;
+import android.util.JsonToken;
 import android.util.Log;
 
 import org.apache.http.HttpResponse;
@@ -10,10 +12,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
@@ -35,7 +35,8 @@ public class PostRequest {
     private static final String TAG_ROUTE_SHORT_NAME = "ROUTE_SHORT_NAME";
     private static final String TAG_STOP_HEADSIGN = "STOP_HEADSIGN";
     private static final String TAG_CURRENT_LOCATION_INDEX = "currLocIdx";
-
+    private static final String TAG_NEXT_STOP = "nextStop";
+    private static final String TAG_PREV_STOP = "preStop";
     private static final String TAG_STOPS = "stops";
 
     private static final String TAG_ARRIVAL_TIME = "ARRIVAL_TIME";
@@ -66,11 +67,9 @@ public class PostRequest {
     private class GetCurrentTransit extends AsyncTask<Void, Void, Void> {
 
         private List<Vehicle> mVehicles;
-        private JSONArray mVehicleJsonArray;
 
         @Override
         protected Void doInBackground(Void... params) {
-            String response = "";
             DefaultHttpClient client = new DefaultHttpClient();
             HttpPost httpPost = new HttpPost(POST_GET_CURRENT_TRANSIT);
 
@@ -96,69 +95,136 @@ public class PostRequest {
             paramList.add(new BasicNameValuePair("time", time));                // e.g. 09:34:57
             paramList.add(new BasicNameValuePair("weekday", weekday));          // e.g. tuesday
 
-            Log.i("POST Params", year + month + day);
-            Log.i("POST Params", time);
-            Log.i("POST Params", weekday);
-
             try {
                 httpPost.setEntity(new UrlEncodedFormEntity(paramList, HTTP.UTF_8));
 
                 HttpResponse execute = client.execute(httpPost);
                 InputStream content = execute.getEntity().getContent();
 
-                BufferedReader buffer = new BufferedReader(new InputStreamReader(content));
-                String ss = "";
-                while ((ss = buffer.readLine()) != null) {
-                    response += ss;
-                }
-                mVehicleJsonArray = new JSONArray(response);
-                Log.d("JSON", mVehicleJsonArray.toString(4));
-
-                for (int i = 0; i < mVehicleJsonArray.length(); i++) {
-                    Vehicle vehicle = new Vehicle();
-                    JSONObject v = mVehicleJsonArray.getJSONObject(i);
-
-                    vehicle.routeId = v.getString(TAG_ROUTE_ID);
-                    vehicle.serviceId = v.getString(TAG_SERVICE_ID);
-                    vehicle.shapeId = v.getString(TAG_SHAPE_ID);
-
-                    vehicle.routeLongName = v.getString(TAG_ROUTE_LONG_NAME);
-                    vehicle.routeShortName = v.getString(TAG_ROUTE_SHORT_NAME);
-                    vehicle.stopHeadsign = v.getString(TAG_STOP_HEADSIGN);
-
-                    if (v.has(TAG_CURRENT_LOCATION_INDEX))
-                        vehicle.currentLocationIndex = v.getInt(TAG_CURRENT_LOCATION_INDEX);
-
-                    JSONArray stopsJsonArray = v.getJSONArray(TAG_STOPS);
-                    if (stopsJsonArray != null) {
-                        int len = stopsJsonArray.length();
-                        for (int j = 0; j < len; j++) {
-                            Stop stop = new Stop();
-                            JSONObject s = stopsJsonArray.getJSONObject(j);
-
-                            stop.arrivalTime = s.getString(TAG_ARRIVAL_TIME);
-                            stop.id = s.getString(TAG_STOP_ID);
-                            stop.name = s.getString(TAG_STOP_NAME);
-
-                            stop.sequence = s.getInt(TAG_STOP_SEQUENCE);
-                            stop.latitude = s.getDouble(TAG_STOP_LATITUDE);
-                            stop.longitude = s.getDouble(TAG_STOP_LONGITUDE);
-
-                            vehicle.stops.add(stop);
-                        }
-                    }
-
-                    mVehicles.add(vehicle);
-                }
+                mVehicles = readJsonArray(content);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                Log.i("POST", e.getMessage());
+                Log.d("POST", e.getMessage());
             }
-
-            mListener.CurrentTransitResponse(mVehicles);
 
             return null;
         }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            mListener.CurrentTransitResponse(mVehicles);
+        }
+    }
+
+    private List<Vehicle> readJsonArray(InputStream in) throws IOException {
+        List<Vehicle> vehicles;
+
+        JsonReader jsonReader = new JsonReader(new InputStreamReader(in));
+        try {
+            vehicles = readVehicleArray(jsonReader);
+        } finally {
+            jsonReader.close();
+        }
+
+        return vehicles;
+    }
+
+    private List<Vehicle> readVehicleArray(JsonReader reader) throws IOException {
+        List<Vehicle> vehicles = new ArrayList();
+
+        reader.beginArray();
+        while (reader.hasNext()) {
+            vehicles.add(readVehicle(reader));
+        }
+        reader.endArray();
+        return vehicles;
+    }
+
+    private Vehicle readVehicle(JsonReader reader) throws IOException {
+
+        Vehicle v = new Vehicle();
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String tag = reader.nextName();
+
+            if (reader.peek()!= JsonToken.NULL) {
+                if (tag.equals(TAG_ROUTE_ID)) {
+                    v.routeId = reader.nextString();
+                } else if (tag.equals(TAG_SERVICE_ID)) {
+                    v.serviceId = reader.nextString();
+                } else if (tag.equals(TAG_SHAPE_ID)) {
+                    v.shapeId = reader.nextString();
+                } else if (tag.equals(TAG_ROUTE_LONG_NAME)) {
+                    v.routeLongName = reader.nextString();
+                } else if (tag.equals(TAG_ROUTE_SHORT_NAME)) {
+                    v.routeShortName = reader.nextString();
+                } else if (tag.equals(TAG_STOP_HEADSIGN)) {
+                    v.stopHeadsign = reader.nextString();
+                } else if (tag.equals(TAG_CURRENT_LOCATION_INDEX)) {
+                    v.currentLocationIndex = reader.nextInt();
+                } else if (tag.equals(TAG_NEXT_STOP)) {
+                    v.nextStop = reader.nextInt();
+                } else if (tag.equals(TAG_PREV_STOP)) {
+                    v.preStop = reader.nextInt();
+                } else if (tag.equals(TAG_STOPS)) {
+                    v.stops = readVehicleStopsArray(reader);
+                } else {
+                    reader.skipValue();
+                }
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+
+        return v;
+    }
+
+    private List<Stop> readVehicleStopsArray(JsonReader reader) throws IOException {
+        List<Stop> stops = new ArrayList();
+
+        reader.beginArray();
+        while (reader.hasNext()) {
+            stops.add(readVehicleStop(reader));
+        }
+        reader.endArray();
+
+        return stops;
+    }
+
+    private Stop readVehicleStop(JsonReader reader) throws IOException {
+        Stop s = new Stop();
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String tag = reader.nextName();
+
+            if (reader.peek()!= JsonToken.NULL) {
+                if (tag.equals(TAG_ARRIVAL_TIME)) {
+                    s.arrivalTime = reader.nextString();
+                } else if (tag.equals(TAG_STOP_ID)) {
+                    s.id = reader.nextString();
+                } else if (tag.equals(TAG_STOP_LATITUDE)) {
+                    s.latitude = reader.nextDouble();
+                } else if (tag.equals(TAG_STOP_LONGITUDE)) {
+                    s.longitude = reader.nextDouble();
+                } else if (tag.equals(TAG_STOP_NAME)) {
+                    s.name = reader.nextString();
+                } else if (tag.equals(TAG_STOP_SEQUENCE)) {
+                    s.sequence = reader.nextInt();
+                } else {
+                    reader.skipValue();
+                }
+            } else {
+                reader.skipValue();
+            }
+        }
+        reader.endObject();
+
+        return s;
     }
 }

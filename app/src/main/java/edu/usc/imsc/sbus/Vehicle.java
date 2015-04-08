@@ -15,13 +15,14 @@ public class Vehicle {
     String routeId;
     String serviceId;
     String shapeId;
-    String tripId;
 
     String routeLongName;
     String routeShortName;
     String stopHeadsign;
 
     int currentLocationIndex;
+    int nextStop;
+    int preStop;
 
     List<Stop> stops;
 
