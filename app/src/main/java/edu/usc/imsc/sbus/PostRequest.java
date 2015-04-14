@@ -13,6 +13,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,6 +28,7 @@ import java.util.Locale;
  */
 public class PostRequest {
     private static final String POST_GET_CURRENT_TRANSIT = "http://gd2.usc.edu:11570/getCurrentTransit";
+    private static final String POST_GET_ROUTE_SHAPE = "http://gd2.usc.edu:11570/getRouteShape";
 
     private static final String TAG_ROUTE_ID = "ROUTE_ID";
     private static final String TAG_SERVICE_ID = "SERVICE_ID";
@@ -34,9 +36,6 @@ public class PostRequest {
     private static final String TAG_ROUTE_LONG_NAME = "ROUTE_LONG_NAME";
     private static final String TAG_ROUTE_SHORT_NAME = "ROUTE_SHORT_NAME";
     private static final String TAG_STOP_HEADSIGN = "STOP_HEADSIGN";
-    private static final String TAG_CURRENT_LOCATION_INDEX = "currLocIdx";
-    private static final String TAG_NEXT_STOP = "nextStop";
-    private static final String TAG_PREV_STOP = "preStop";
     private static final String TAG_STOPS = "stops";
 
     private static final String TAG_ARRIVAL_TIME = "ARRIVAL_TIME";
@@ -48,6 +47,7 @@ public class PostRequest {
 
     public interface PostRequestListener {
         void CurrentTransitResponse(List<Vehicle> vehicles);
+//        void RouteShapeResponse();
     }
 
     private PostRequestListener mListener;
@@ -59,10 +59,18 @@ public class PostRequest {
         task.execute();
     }
 
-    /**
-     * AJAX call to the Metro Developer API
-     * Queries for all of the vehicles, and adds them to my list of vehicles
-     */
+    public void getVehicleRoute(PostRequestListener listener, Vehicle v) {
+        mListener = listener;
+
+        GetRouteShape task = new GetRouteShape();
+        task.execute(v);
+    }
+
+    /****************************************************************************
+     *                          GET CURRENT TRANSIT                             *
+     *  AJAX call to the API                                                    *
+     *  Queries for all of the vehicles, and adds them to my list of vehicles   *
+     ****************************************************************************/
 
     private class GetCurrentTransit extends AsyncTask<Void, Void, Void> {
 
@@ -78,7 +86,7 @@ public class PostRequest {
 
             /* Used for date parameter */
             String year = String.valueOf(c.get(Calendar.YEAR));
-            String month = String.format("%02d", c.get(Calendar.MONTH));
+            String month = String.format("%02d", c.get(Calendar.MONTH) + 1);
             String day = String.format("%02d", c.get(Calendar.DAY_OF_MONTH));
 
             /* Used for time parameter */
@@ -101,7 +109,7 @@ public class PostRequest {
                 HttpResponse execute = client.execute(httpPost);
                 InputStream content = execute.getEntity().getContent();
 
-                mVehicles = readJsonArray(content);
+                mVehicles = readCurrentTransitJsonArray(content);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -119,7 +127,7 @@ public class PostRequest {
         }
     }
 
-    private List<Vehicle> readJsonArray(InputStream in) throws IOException {
+    private List<Vehicle> readCurrentTransitJsonArray(InputStream in) throws IOException {
         List<Vehicle> vehicles;
 
         JsonReader jsonReader = new JsonReader(new InputStreamReader(in));
@@ -164,12 +172,6 @@ public class PostRequest {
                     v.routeShortName = reader.nextString();
                 } else if (tag.equals(TAG_STOP_HEADSIGN)) {
                     v.stopHeadsign = reader.nextString();
-                } else if (tag.equals(TAG_CURRENT_LOCATION_INDEX)) {
-                    v.currentLocationIndex = reader.nextInt();
-                } else if (tag.equals(TAG_NEXT_STOP)) {
-                    v.nextStop = reader.nextInt();
-                } else if (tag.equals(TAG_PREV_STOP)) {
-                    v.preStop = reader.nextInt();
                 } else if (tag.equals(TAG_STOPS)) {
                     v.stops = readVehicleStopsArray(reader);
                 } else {
@@ -209,13 +211,16 @@ public class PostRequest {
                 } else if (tag.equals(TAG_STOP_ID)) {
                     s.id = reader.nextString();
                 } else if (tag.equals(TAG_STOP_LATITUDE)) {
-                    s.latitude = reader.nextDouble();
+//                    s.latitude = reader.nextDouble();
+                    s.latitude = Double.valueOf(reader.nextString());
                 } else if (tag.equals(TAG_STOP_LONGITUDE)) {
-                    s.longitude = reader.nextDouble();
+//                    s.longitude = reader.nextDouble();
+                    s.longitude = Double.valueOf(reader.nextString());
                 } else if (tag.equals(TAG_STOP_NAME)) {
                     s.name = reader.nextString();
                 } else if (tag.equals(TAG_STOP_SEQUENCE)) {
-                    s.sequence = reader.nextInt();
+//                    s.sequence = reader.nextInt();
+                    s.sequence = Integer.valueOf(reader.nextString());
                 } else {
                     reader.skipValue();
                 }
@@ -226,5 +231,44 @@ public class PostRequest {
         reader.endObject();
 
         return s;
+    }
+
+
+    /****************************************************************************
+     *                              GET ROUTE SHAPE                             *
+     *  AJAX call to the API                                                    *
+     *  Queries for all of the vehicles, and adds them to my list of vehicles   *
+     ****************************************************************************/
+
+    private class GetRouteShape extends AsyncTask<Vehicle, Void, List> {
+
+        @Override
+        protected List doInBackground(Vehicle... params) {
+            DefaultHttpClient client = new DefaultHttpClient();
+            HttpPost httpPost = new HttpPost(POST_GET_CURRENT_TRANSIT);
+
+            // Add parameters to the post request
+            List<NameValuePair> paramList = new ArrayList<>(3);
+            paramList.add(new BasicNameValuePair("SHAPE_ID", params[0].shapeId));
+
+            Log.d("ROUTE SHAPE", params[0].shapeId);
+
+            try {
+                httpPost.setEntity(new UrlEncodedFormEntity(paramList, HTTP.UTF_8));
+
+                HttpResponse execute = client.execute(httpPost);
+                InputStream content = execute.getEntity().getContent();
+
+                Log.d("ROUTE SHAPE", "SUCCESS");
+
+//                mVehicles = readCurrentTransitJsonArray(content);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e("ROUTE SHAPE", e.getMessage());
+            }
+
+            return null;
+        }
     }
 }
