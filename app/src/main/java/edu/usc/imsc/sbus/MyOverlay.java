@@ -6,6 +6,7 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RadioButton;
@@ -37,6 +38,7 @@ public class MyOverlay {
 
     // Specific overlay item for displaying the user's current location
     private OverlayItem mCurrentLocationItem;
+    private OverlayItem mPreviousSelectedVehicleItem;
 
     public MyOverlay(MainActivity context, Drawable marker, VehicleClickListener listener) {
         mContext = context;
@@ -64,7 +66,32 @@ public class MyOverlay {
      */
     private boolean onSingleTapUpHelper(int index, OverlayItem item) {
         if (item instanceof VehicleOverlayItem) {
+
             Vehicle v = ((VehicleOverlayItem) item).vehicle;
+            if (mPreviousSelectedVehicleItem != null) {
+                if (mPreviousSelectedVehicleItem == item) {
+                    // If this vehicle was the last vehicle to be selected
+                    v.hasFocus = false;
+                    item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
+                    mPreviousSelectedVehicleItem = null;
+                } else {
+                    // If there was another vehicle previously selected
+                    mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
+                    item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
+
+                    ((VehicleOverlayItem) mPreviousSelectedVehicleItem).vehicle.hasFocus = false;
+                    v.hasFocus = true;
+
+                    mPreviousSelectedVehicleItem = item;
+                }
+            } else {
+                // If this is the first time a vehicle has been selected
+                v.hasFocus = true;
+                item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
+
+                mPreviousSelectedVehicleItem = item;
+            }
+
             mListener.onVehicleClick(v);
             return true;
         }
