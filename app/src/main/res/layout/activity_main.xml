@@ -35,24 +35,11 @@
         android:visibility="gone" />
 
     <ImageButton
-        android:id="@+id/near_station"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/searchText"
-        android:layout_marginRight="4dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/button_background"
-        android:onClick="onStationsClick"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_menu_myplaces" />
-
-    <ImageButton
         android:id="@+id/my_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:layout_below="@+id/near_station"
+        android:layout_below="@+id/searchText"
         android:layout_marginRight="4dp"
         android:layout_marginTop="4dp"
         android:background="@drawable/button_background"
@@ -85,10 +72,17 @@
         android:text="Finding Public Transit . . ." />
 
     <include
+        android:id="@+id/stop_info"
+        layout="@layout/stop_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/vehicle_info" />
+
+    <include
         android:id="@+id/vehicle_info"
         layout="@layout/vehicle_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true" />
 
 </RelativeLayout>

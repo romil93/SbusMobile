@@ -12,4 +12,6 @@ public class Stop {
 
     double latitude;
     double longitude;
+
+    boolean hasFocus;
 }

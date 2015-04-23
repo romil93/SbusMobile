@@ -38,6 +38,8 @@ public class Vehicle {
         nearby = false;
         hasFocus = false;
         currentLocationIndex = 0;
+        prevStop = 0;
+        nextStop = 0;
     }
 
     public int determineCurrentLocationIndex() {

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#aaFFFFFF"
+    android:orientation="vertical"
+    android:paddingBottom="10dp"
+    android:paddingRight="16dp"
+    android:paddingStart="16dp"
+    android:paddingTop="10dp">
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_blue" />
+
+        <TextView
+            android:id="@+id/selected_stop_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:gravity="start"
+            android:text="Stop Name"
+            android:textColor="#222222"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/selected_stop_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            android:gravity="end"
+            android:text="Time"
+            android:textColor="#222222"
+            android:textSize="20sp" />
+
+    </TableRow>
+</LinearLayout>

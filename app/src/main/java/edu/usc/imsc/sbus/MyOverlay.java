@@ -29,6 +29,8 @@ public class MyOverlay {
 
     public interface VehicleClickListener {
         void onVehicleClick(Vehicle v);
+        void onStopClick(Stop s);
+        void onEmptyClick();
     }
 
     private ItemizedIconOverlay<OverlayItem> mOverlay;
@@ -39,6 +41,7 @@ public class MyOverlay {
     // Specific overlay item for displaying the user's current location
     private OverlayItem mCurrentLocationItem;
     private OverlayItem mPreviousSelectedVehicleItem;
+    private OverlayItem mPreviousSelectedStopItem;
 
     public MyOverlay(MainActivity context, Drawable marker, VehicleClickListener listener) {
         mContext = context;
@@ -66,36 +69,16 @@ public class MyOverlay {
      */
     private boolean onSingleTapUpHelper(int index, OverlayItem item) {
         if (item instanceof VehicleOverlayItem) {
-
             Vehicle v = ((VehicleOverlayItem) item).vehicle;
-            if (mPreviousSelectedVehicleItem != null) {
-                if (mPreviousSelectedVehicleItem == item) {
-                    // If this vehicle was the last vehicle to be selected
-                    v.hasFocus = false;
-                    item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
-                    mPreviousSelectedVehicleItem = null;
-                } else {
-                    // If there was another vehicle previously selected
-                    mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
-                    item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
-
-                    ((VehicleOverlayItem) mPreviousSelectedVehicleItem).vehicle.hasFocus = false;
-                    v.hasFocus = true;
-
-                    mPreviousSelectedVehicleItem = item;
-                }
-            } else {
-                // If this is the first time a vehicle has been selected
-                v.hasFocus = true;
-                item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
-
-                mPreviousSelectedVehicleItem = item;
-            }
-
-            mListener.onVehicleClick(v);
-            return true;
+            handleVehicleClick(v, item);
+        } else if (item instanceof StopOverlayItem) {
+            Stop s = ((StopOverlayItem) item).stop;
+            handleStopClick(s, item);
+        } else {
+            handleEmptyClick();
         }
-        return false;
+
+        return true;
     }
 
     // Add an individual item to the overlay
@@ -124,5 +107,80 @@ public class MyOverlay {
 
     public ItemizedIconOverlay<OverlayItem> getOverlay() {
         return mOverlay;
+    }
+
+    private void handleVehicleClick(Vehicle v, OverlayItem item) {
+        if (mPreviousSelectedVehicleItem != null) {
+            if (mPreviousSelectedVehicleItem == item) {
+                // If this vehicle was the last vehicle to be selected
+                v.hasFocus = false;
+                item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
+                mPreviousSelectedVehicleItem = null;
+            } else {
+                // If there was another vehicle previously selected
+                mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
+                item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
+
+                ((VehicleOverlayItem) mPreviousSelectedVehicleItem).vehicle.hasFocus = false;
+                v.hasFocus = true;
+
+                mPreviousSelectedVehicleItem = item;
+            }
+        } else {
+            // If this is the first time a vehicle has been selected
+            v.hasFocus = true;
+            item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
+
+            mPreviousSelectedVehicleItem = item;
+        }
+
+        Log.d("onStopClick", "Vehicle Click");
+        if (mPreviousSelectedStopItem != null) {
+            Log.d("onStopClick", "Vehicle Click Stop Item is not null");
+            ((StopOverlayItem) mPreviousSelectedStopItem).stop.hasFocus = false;
+            mListener.onStopClick(((StopOverlayItem) mPreviousSelectedStopItem).stop);
+            mPreviousSelectedStopItem = null;
+        } else {
+            Log.d("onStopClick", "Vehicle Click Stop Item NULL");
+        }
+
+        mListener.onVehicleClick(v);
+    }
+
+    private void handleStopClick(Stop s, OverlayItem item) {
+        Log.d("onStopClick", "Handling Click");
+        if (mPreviousSelectedStopItem != null) {
+            Log.d("onStopClick", "An item has been clicked before");
+            if (mPreviousSelectedStopItem == item) {
+                Log.d("onStopClick", "Same item as previous click");
+                // If this stop was the last stop to be selected
+                s.hasFocus = false;
+                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
+                mPreviousSelectedStopItem = null;
+            } else {
+                Log.d("onStopClick", "Different item clicked");
+                // If there was another stop previously selected
+                mPreviousSelectedStopItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
+                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+
+                ((StopOverlayItem) mPreviousSelectedStopItem).stop.hasFocus = false;
+                s.hasFocus = true;
+
+                mPreviousSelectedStopItem = item;
+            }
+        } else {
+            Log.d("onStopClick", "First item click");
+            // If this is the first time a stop has been selected
+            s.hasFocus = true;
+            item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+
+            mPreviousSelectedStopItem = item;
+        }
+
+        mListener.onStopClick(s);
+    }
+
+    private void handleEmptyClick() {
+        mListener.onEmptyClick();
     }
 }
