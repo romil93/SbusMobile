@@ -33,6 +33,7 @@ public class PostRequest {
     private static final String TAG_ROUTE_ID = "ROUTE_ID";
     private static final String TAG_SERVICE_ID = "SERVICE_ID";
     private static final String TAG_SHAPE_ID = "SHAPE_ID";
+    private static final String TAG_TRIP_ID = "trip_id";
     private static final String TAG_ROUTE_LONG_NAME = "ROUTE_LONG_NAME";
     private static final String TAG_ROUTE_SHORT_NAME = "ROUTE_SHORT_NAME";
     private static final String TAG_STOP_HEADSIGN = "STOP_HEADSIGN";
@@ -166,6 +167,8 @@ public class PostRequest {
                     v.serviceId = reader.nextString();
                 } else if (tag.equals(TAG_SHAPE_ID)) {
                     v.shapeId = reader.nextString();
+                } else if (tag.equals(TAG_TRIP_ID)){
+                    v.tripId = reader.nextString();
                 } else if (tag.equals(TAG_ROUTE_LONG_NAME)) {
                     v.routeLongName = reader.nextString();
                 } else if (tag.equals(TAG_ROUTE_SHORT_NAME)) {

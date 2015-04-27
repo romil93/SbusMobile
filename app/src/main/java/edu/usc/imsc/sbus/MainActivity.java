@@ -55,7 +55,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
-    private ArrayAdapter<CharSequence> mAdapter;
+    private VehiclesAdapter mAdapter;
     private AutoCompleteTextView mSearchText;
     private ImageButton mSearchButton;
     private View vehicleInfoBox;
@@ -411,12 +411,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
             MapThread mapThread = new MapThread(this);
             mapThread.start();
 
-            List<CharSequence> vehicleNames = new ArrayList<>();
-            for (Vehicle v : mVehicles) {
-                vehicleNames.add(v.stopHeadsign);
-            }
-            mAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, vehicleNames);
-            mAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            mAdapter = new VehiclesAdapter(this, R.layout.vehicle_search_item, mVehicles);
             mSearchText.setAdapter(mAdapter);
         }
         else
