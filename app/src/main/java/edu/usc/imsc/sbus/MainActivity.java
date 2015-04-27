@@ -212,14 +212,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
                 }
 
                 if (v.isNearby() || mLocation == null) {
-//                    if (mVehicleOverlay.getPreviouslySelectedVehicleItem() != null) {
-//                        VehicleOverlayItem prevItem = mVehicleOverlay.getPreviouslySelectedVehicleItem();
-//                        Vehicle prevVehicle = prevItem.vehicle;
-//
-//                        if ()
-//                    }
                     if (mVehicleOverlay.updateVehicle(v)) {
-                        Log.d("Vehicle Update", "The vehicle has been updated");
                         if (v.hasFocus) {
                             // Update the route
                             mMap.getOverlays().remove(mVehiclePath);
@@ -232,7 +225,6 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
                     } else {
                         VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, geoPoint, v);
                         if (v.hasFocus) {
-                            mStopsOverlay.clearItems();
                             // Update the route
                             mMap.getOverlays().remove(mVehiclePath);
                             displayVehicleRoute(v);
@@ -267,15 +259,24 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
 
         mMap.getOverlays().add(mVehiclePath);
 
-        mStopsOverlay.clearItems();
+//        mStopsOverlay.clearItems();
         for (int i = 0; i < waypoints.size(); i++) {
             Stop s = v.stops.get(v.currentLocationIndex + i);
             GeoPoint g = new GeoPoint(waypoints.get(i));
-            StopOverlayItem stopMarker = new StopOverlayItem("Stop", v.stopHeadsign, g, s);
-            if (s.hasFocus) {
-                stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+            if (mStopsOverlay.updateStop(s, g)) {
+                if (s.hasFocus) {
+                    selectedStopName.setText(s.name);
+                    selectedStopTime.setText(s.arrivalTime);
+                }
+            } else {
+                StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
+                if (s.hasFocus) {
+                    stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+                    selectedStopName.setText(s.name);
+                    selectedStopTime.setText(s.arrivalTime);
+                }
+                mStopsOverlay.addItem(stopMarker);
             }
-            mStopsOverlay.addItem(stopMarker);
         }
 
         mMap.invalidate();
@@ -439,6 +440,8 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
             vehicleName.setText("Vehicle Name");
             stopName.setText("Stop Name");
             stopTime.setText("Stop Time");
+            stopInfoBox.setVisibility(View.GONE);
+            mStopsOverlay.removePreviousStop();
         }
 
         mMap.invalidate();

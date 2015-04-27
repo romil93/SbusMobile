@@ -116,7 +116,6 @@ public class MyOverlay {
                     VehicleOverlayItem newItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, v.getCurrentLocation(), v);
                     if (mPreviousSelectedVehicleItem != null) {
                         if (mPreviousSelectedVehicleItem.vehicle == v) {
-                            Log.d("Vehicle Update", "Previous vehicle item has been updated");
                             mPreviousSelectedVehicleItem = newItem;
                         }
                     }
@@ -134,12 +133,39 @@ public class MyOverlay {
         return false;
     }
 
-    public VehicleOverlayItem getPreviouslySelectedVehicleItem() {
-        return mPreviousSelectedVehicleItem;
+    public boolean updateStop(Stop stop, GeoPoint g) {
+
+        for (int i = 0; i < mOverlay.size(); i++) {
+            if (mOverlay.getItem(i) instanceof StopOverlayItem) {
+                Stop s = ((StopOverlayItem) mOverlay.getItem(i)).stop;
+
+                if (stop == s) {
+                    mOverlay.removeItem(mOverlay.getItem(i));
+                    StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
+                    if (mPreviousSelectedStopItem != null) {
+                        if (mPreviousSelectedStopItem.stop == stop) {
+                            mPreviousSelectedStopItem = stopMarker;
+                        }
+                    }
+                    if (s.hasFocus) {
+                        stopMarker.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+                    } else {
+                        stopMarker.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
+                    }
+                    mOverlay.addItem(stopMarker);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
-    public void setPreviouslySelectedVehicleItem(VehicleOverlayItem item) {
-        mPreviousSelectedVehicleItem = item;
+    public void removePreviousStop() {
+        if (mPreviousSelectedStopItem != null) {
+            mPreviousSelectedStopItem.stop.hasFocus = false;
+            mPreviousSelectedStopItem = null;
+        }
     }
 
     public ItemizedIconOverlay<OverlayItem> getOverlay() {
