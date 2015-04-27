@@ -14,6 +14,9 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -52,7 +55,8 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
-    private EditText mSearchText;
+    private ArrayAdapter<CharSequence> mAdapter;
+    private AutoCompleteTextView mSearchText;
     private ImageButton mSearchButton;
     private View vehicleInfoBox;
     private TextView vehicleName;
@@ -150,46 +154,17 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         selectedStopName = (TextView) findViewById(R.id.selected_stop_name);
         selectedStopTime = (TextView) findViewById(R.id.selected_stop_time);
 
-        mSearchText = (EditText) findViewById(R.id.searchText);
+        mSearchText = (AutoCompleteTextView) findViewById(R.id.searchText);
         mSearchButton = (ImageButton) findViewById(R.id.searchButton);
 
-        mSearchText.setOnClickListener(new View.OnClickListener() {
+        mSearchText.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onClick(View v) {
-                mSearchText.setCursorVisible(true);
-            }
-        });
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Vehicle v = mVehicles.get(position);
 
-        mSearchText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (!s.toString().trim().isEmpty() && mSearchButton.getVisibility() == View.GONE) {
-                    mSearchButton.setVisibility(View.VISIBLE);
-                } else if (s.toString().trim().isEmpty() && mSearchButton.getVisibility() == View.VISIBLE) {
-                    mSearchButton.setVisibility(View.GONE);
-                    mSearchText.setCursorVisible(false);
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
-
-        mSearchText.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
-                    search(mSearchText.getText().toString().trim());
-                    return true;
-                }
-                return false;
+                VehicleInfoDialog dialog = new VehicleInfoDialog();
+                dialog.setVehicle(v);
+                dialog.show(getFragmentManager(), "Vehicle Searched Dialog");
             }
         });
 
@@ -219,7 +194,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
      */
     public void displayMapVehicles() {
         findViewById(R.id.text_loading_vehicles).setVisibility(View.GONE);
-        mVehicleOverlay.clearItems();
+//        mVehicleOverlay.clearItems();
         for (Vehicle v : mVehicles) {
             GeoPoint geoPoint = v.getCurrentLocation();
 
@@ -227,9 +202,9 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
 
                 if (mLocation != null) {
                     GeoPoint cLoc = new GeoPoint(mLocation);
-                    // If the bus is more than ~5 miles away, don't show
+                    // If the bus is more than ~3 miles away, don't show
                     // TODO - add an option for the user to show more
-                    if (cLoc.distanceTo(geoPoint) > 8000) {
+                    if (cLoc.distanceTo(geoPoint) > 5000) {
                         v.nearby = false;
                     } else {
                         v.nearby = true;
@@ -237,17 +212,40 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
                 }
 
                 if (v.isNearby() || mLocation == null) {
-                    VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, geoPoint, v);
-                    if (v.hasFocus) {
-                        mStopsOverlay.clearItems();
-                        mMap.getOverlays().remove(mVehiclePath);
-                        vehicleItem.setMarker(getResources().getDrawable(R.drawable.vehicle_selected));
-                        vehicleName.setText(v.stopHeadsign);
-                        stopName.setText(v.stops.get(v.nextStop).name);
-                        stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-                        displayVehicleRoute(v);
+//                    if (mVehicleOverlay.getPreviouslySelectedVehicleItem() != null) {
+//                        VehicleOverlayItem prevItem = mVehicleOverlay.getPreviouslySelectedVehicleItem();
+//                        Vehicle prevVehicle = prevItem.vehicle;
+//
+//                        if ()
+//                    }
+                    if (mVehicleOverlay.updateVehicle(v)) {
+                        Log.d("Vehicle Update", "The vehicle has been updated");
+                        if (v.hasFocus) {
+                            // Update the route
+                            mMap.getOverlays().remove(mVehiclePath);
+                            displayVehicleRoute(v);
+                            // Update the info box
+                            vehicleName.setText(v.stopHeadsign);
+                            stopName.setText(v.stops.get(v.nextStop).name);
+                            stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
+                        }
+                    } else {
+                        VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, geoPoint, v);
+                        if (v.hasFocus) {
+                            mStopsOverlay.clearItems();
+                            // Update the route
+                            mMap.getOverlays().remove(mVehiclePath);
+                            displayVehicleRoute(v);
+                            // Set the marker to vehicle selected
+                            vehicleItem.setMarker(getResources().getDrawable(R.drawable.vehicle_selected));
+                            // Update the info box
+                            vehicleName.setText(v.stopHeadsign);
+                            stopName.setText(v.stops.get(v.nextStop).name);
+                            stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
+
+                        }
+                        mVehicleOverlay.addItem(vehicleItem);
                     }
-                    mVehicleOverlay.addItem(vehicleItem);
                 }
             }
         }
@@ -411,6 +409,14 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
             // This will update the busses every 10 seconds
             MapThread mapThread = new MapThread(this);
             mapThread.start();
+
+            List<CharSequence> vehicleNames = new ArrayList<>();
+            for (Vehicle v : mVehicles) {
+                vehicleNames.add(v.stopHeadsign);
+            }
+            mAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, vehicleNames);
+            mAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            mSearchText.setAdapter(mAdapter);
         }
         else
             Toast.makeText(this, "Vehicles Not Found", Toast.LENGTH_SHORT).show();

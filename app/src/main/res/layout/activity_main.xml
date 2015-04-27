@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:background="#aaFFFFFF"
         android:cursorVisible="false"
-        android:hint="Search for public transit vehicles"
+        android:hint="search for public transit vehicles"
         android:imeOptions="actionSearch"
         android:inputType="textPostalAddress"
         android:minHeight="40dp"

@@ -40,8 +40,8 @@ public class MyOverlay {
 
     // Specific overlay item for displaying the user's current location
     private OverlayItem mCurrentLocationItem;
-    private OverlayItem mPreviousSelectedVehicleItem;
-    private OverlayItem mPreviousSelectedStopItem;
+    private VehicleOverlayItem mPreviousSelectedVehicleItem;
+    private StopOverlayItem mPreviousSelectedStopItem;
 
     public MyOverlay(MainActivity context, Drawable marker, VehicleClickListener listener) {
         mContext = context;
@@ -105,6 +105,43 @@ public class MyOverlay {
         mOverlay.addItem(mCurrentLocationItem);
     }
 
+    public boolean updateVehicle(Vehicle vehicle) {
+
+        for (int i = 0; i < mOverlay.size(); i++) {
+            if (mOverlay.getItem(i) instanceof VehicleOverlayItem) {
+                Vehicle v = ((VehicleOverlayItem) mOverlay.getItem(i)).vehicle;
+
+                if (vehicle == v) {
+                    mOverlay.removeItem(mOverlay.getItem(i));
+                    VehicleOverlayItem newItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, v.getCurrentLocation(), v);
+                    if (mPreviousSelectedVehicleItem != null) {
+                        if (mPreviousSelectedVehicleItem.vehicle == v) {
+                            Log.d("Vehicle Update", "Previous vehicle item has been updated");
+                            mPreviousSelectedVehicleItem = newItem;
+                        }
+                    }
+                    if (v.hasFocus) {
+                        newItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
+                    } else {
+                        newItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
+                    }
+                    mOverlay.addItem(newItem);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public VehicleOverlayItem getPreviouslySelectedVehicleItem() {
+        return mPreviousSelectedVehicleItem;
+    }
+
+    public void setPreviouslySelectedVehicleItem(VehicleOverlayItem item) {
+        mPreviousSelectedVehicleItem = item;
+    }
+
     public ItemizedIconOverlay<OverlayItem> getOverlay() {
         return mOverlay;
     }
@@ -121,17 +158,17 @@ public class MyOverlay {
                 mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle));
                 item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
 
-                ((VehicleOverlayItem) mPreviousSelectedVehicleItem).vehicle.hasFocus = false;
+                mPreviousSelectedVehicleItem.vehicle.hasFocus = false;
                 v.hasFocus = true;
 
-                mPreviousSelectedVehicleItem = item;
+                mPreviousSelectedVehicleItem = (VehicleOverlayItem) item;
             }
         } else {
             // If this is the first time a vehicle has been selected
             v.hasFocus = true;
             item.setMarker(mContext.getResources().getDrawable(R.drawable.vehicle_selected));
 
-            mPreviousSelectedVehicleItem = item;
+            mPreviousSelectedVehicleItem = (VehicleOverlayItem) item;
         }
 
         Log.d("onStopClick", "Vehicle Click");
@@ -163,10 +200,10 @@ public class MyOverlay {
                 mPreviousSelectedStopItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
                 item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
 
-                ((StopOverlayItem) mPreviousSelectedStopItem).stop.hasFocus = false;
+                mPreviousSelectedStopItem.stop.hasFocus = false;
                 s.hasFocus = true;
 
-                mPreviousSelectedStopItem = item;
+                mPreviousSelectedStopItem = (StopOverlayItem) item;
             }
         } else {
             Log.d("onStopClick", "First item click");
@@ -174,7 +211,7 @@ public class MyOverlay {
             s.hasFocus = true;
             item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
 
-            mPreviousSelectedStopItem = item;
+            mPreviousSelectedStopItem = (StopOverlayItem) item;
         }
 
         mListener.onStopClick(s);
