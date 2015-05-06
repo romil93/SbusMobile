@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#aaFFFFFF"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#aaFFFFFF">
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/vehicle_name"
@@ -31,7 +31,7 @@
             android:id="@+id/stop_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="3"
+            android:layout_weight="4"
             android:text="Stop Name"
             android:textColor="#222222"
             android:textSize="18sp" />
@@ -58,6 +58,17 @@
             android:text="Stop Time"
             android:textColor="#222222"
             android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/delay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="+276s"
+            android:textColor="#FF0000"
+
+            android:textSize="18sp"
+            android:textStyle="bold" />
     </TableRow>
 
 </LinearLayout>

@@ -58,7 +58,7 @@
         android:background="@drawable/button_background"
         android:onClick="onInfoClick"
         android:padding="8dp"
-        android:src="@android:drawable/ic_menu_info_details" />
+        android:src="@android:drawable/ic_menu_preferences" />
 
     <TextView
         android:id="@+id/text_loading_vehicles"

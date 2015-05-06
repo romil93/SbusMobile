@@ -29,12 +29,15 @@ import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.bonuspack.routing.RoadNode;
+import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.OverlayItem;
+import org.osmdroid.views.overlay.TilesOverlay;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,12 +65,14 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     private TextView vehicleName;
     private TextView stopName;
     private TextView stopTime;
+    private TextView vehicleDelay;
 
     private View stopInfoBox;
     private TextView selectedStopName;
     private TextView selectedStopTime;
 
     private boolean bDefaultZoom = true;
+    private int defaultZoom = 17;
 
     private boolean updateVehicleRealTime = true;
 
@@ -81,7 +86,11 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         setContentView(R.layout.activity_main);
 
         mMap = (MapView) findViewById(R.id.map);
-        mMap.setTileSource(TileSourceFactory.MAPNIK);
+
+        MapTileProviderBasic provider = new MapTileProviderBasic(getApplicationContext());
+        provider.setTileSource(TileSourceFactory.PUBLIC_TRANSPORT);
+        TilesOverlay tilesOverlay = new TilesOverlay(provider, this.getBaseContext());
+        mMap.getOverlays().add(tilesOverlay);
 
         /* Enable Zoom Controls */
         mMap.setMultiTouchControls(true);
@@ -89,7 +98,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
 
         /* Set a Default Map Point */
         mMapController = mMap.getController();
-        mMapController.setZoom(12);
+        mMapController.setZoom(defaultZoom);
         GeoPoint startPoint = new GeoPoint(MAP_DEFAULT_LATITUDE, MAP_DEFAULT_LONGITUDE);
         mMapController.setCenter(startPoint);
 
@@ -110,7 +119,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         if (lastLocation != null) {
             updateLocation(lastLocation);
             if (bDefaultZoom) {
-                mMapController.setZoom(17);
+                mMapController.setZoom(defaultZoom);
                 bDefaultZoom = false;
             }
 
@@ -119,7 +128,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         if (mLocation != null) {
             updateLocation(mLocation);
             if (bDefaultZoom) {
-                mMapController.setZoom(17);
+                mMapController.setZoom(defaultZoom);
                 bDefaultZoom = false;
             }
         }
@@ -148,6 +157,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         vehicleName = (TextView) findViewById(R.id.vehicle_name);
         stopName = (TextView) findViewById(R.id.stop_name);
         stopTime = (TextView) findViewById(R.id.stop_time);
+        vehicleDelay = (TextView) findViewById(R.id.delay);
 
         stopInfoBox = findViewById(R.id.stop_info);
         stopInfoBox.setVisibility(View.GONE);
@@ -244,42 +254,47 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         mMap.invalidate();
     }
 
-    private void displayVehicleRoute(Vehicle v) {
-        ArrayList<GeoPoint> waypoints = new ArrayList<>();
+    private void displayVehicleRoute(final Vehicle v) {
+        final ArrayList<GeoPoint> waypoints = new ArrayList<>();
         for (int i = 0; i < v.stops.size(); i++) {
             if (i >= v.currentLocationIndex) {
                 waypoints.add(new GeoPoint(v.stops.get(i).latitude, v.stops.get(i).longitude));
             }
         }
 
-        Road road = mRoadManager.getRoad(waypoints);
-        mVehiclePath = mRoadManager.buildRoadOverlay(road, this);
-        mVehiclePath.setColor(Color.RED);
-        mVehiclePath.setWidth(12);
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Road road = mRoadManager.getRoad(waypoints);
+                mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
+                mVehiclePath.setColor(Color.RED);
+                mVehiclePath.setWidth(12);
 
-        mMap.getOverlays().add(mVehiclePath);
+                mMap.getOverlays().add(mVehiclePath);
 
-//        mStopsOverlay.clearItems();
-        for (int i = 0; i < waypoints.size(); i++) {
-            Stop s = v.stops.get(v.currentLocationIndex + i);
-            GeoPoint g = new GeoPoint(waypoints.get(i));
-            if (mStopsOverlay.updateStop(s, g)) {
-                if (s.hasFocus) {
-                    selectedStopName.setText(s.name);
-                    selectedStopTime.setText(s.arrivalTime);
+                for (int i = 0; i < waypoints.size(); i++) {
+                    Stop s = v.stops.get(v.currentLocationIndex + i);
+                    GeoPoint g = new GeoPoint(waypoints.get(i));
+                    if (mStopsOverlay.updateStop(s, g)) {
+                        if (s.hasFocus) {
+                            selectedStopName.setText(s.name);
+                            selectedStopTime.setText(s.arrivalTime);
+                        }
+                    } else {
+                        StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
+                        if (s.hasFocus) {
+                            stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+                            selectedStopName.setText(s.name);
+                            selectedStopTime.setText(s.arrivalTime);
+                        }
+                        mStopsOverlay.addItem(stopMarker);
+                    }
                 }
-            } else {
-                StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
-                if (s.hasFocus) {
-                    stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
-                    selectedStopName.setText(s.name);
-                    selectedStopTime.setText(s.arrivalTime);
-                }
-                mStopsOverlay.addItem(stopMarker);
+
+                mMap.invalidate();
             }
-        }
-
-        mMap.invalidate();
+        };
+        r.run();
     }
 
     /**
@@ -419,13 +434,58 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     }
 
     @Override
+    public void VehicleDelayResponse(Vehicle v, float seconds) {
+        Calendar c = Calendar.getInstance();
+
+        int prediction = (int) seconds;
+
+        int predictionMinutes = prediction / 60;
+        int predictionSeconds = prediction % 60;
+
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        int minute = c.get(Calendar.MINUTE);
+        int second = c.get(Calendar.SECOND);
+
+        int currentTime = (hour * 3600) + (minute * 60) + second;
+
+        String nextStopArrivalTime = v.stops.get(v.nextStop).arrivalTime;
+        int nextHour = Integer.valueOf(nextStopArrivalTime.substring(0, 2));
+        int nextMinute = Integer.valueOf(nextStopArrivalTime.substring(3, 5));
+        int nextSecond = Integer.valueOf(nextStopArrivalTime.substring(6, 8));
+
+        int nextTime = (nextHour * 3600) + (nextMinute * 60) + nextSecond;
+
+        int timeDifference = nextTime - currentTime;
+        final int delay = prediction - timeDifference;
+
+        if (delay > 0) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    vehicleDelay.setText("+ " + delay + "s");
+                }
+            });
+        }
+        Log.d("Delay", String.valueOf(delay));
+    }
+
+    /**
+     * *************************************
+     * Map Item Clicks
+     * **************************************
+     */
+
+    @Override
     public void onVehicleClick(Vehicle v) {
         hideVehicleRoute();
         hideVehicleStops();
         if (v.hasFocus) {
+            PostRequest post = new PostRequest();
+            post.getVehicleDelay(this, v);
             vehicleName.setText(v.stopHeadsign);
             stopName.setText(v.stops.get(v.nextStop).name);
             stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
+            vehicleDelay.setText("");
             displayVehicleRoute(v);
 //            createTaskGetVehicleRoute(v);
 
@@ -435,6 +495,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
             vehicleName.setText("Vehicle Name");
             stopName.setText("Stop Name");
             stopTime.setText("Stop Time");
+            vehicleDelay.setText("");
             stopInfoBox.setVisibility(View.GONE);
             mStopsOverlay.removePreviousStop();
         }

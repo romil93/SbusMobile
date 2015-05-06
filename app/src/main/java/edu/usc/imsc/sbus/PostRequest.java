@@ -8,10 +8,14 @@ import android.util.Log;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,6 +53,7 @@ public class PostRequest {
     public interface PostRequestListener {
         void CurrentTransitResponse(List<Vehicle> vehicles);
 //        void RouteShapeResponse();
+        void VehicleDelayResponse(Vehicle v, float seconds);
     }
 
     private PostRequestListener mListener;
@@ -67,11 +72,20 @@ public class PostRequest {
         task.execute(v);
     }
 
-    /****************************************************************************
-     *                          GET CURRENT TRANSIT                             *
-     *  AJAX call to the API                                                    *
-     *  Queries for all of the vehicles, and adds them to my list of vehicles   *
-     ****************************************************************************/
+    public void getVehicleDelay(PostRequestListener listener, Vehicle v) {
+        mListener = listener;
+
+        GetDelay task = new GetDelay();
+        task.execute(v);
+    }
+
+    /**
+     * *************************************************************************
+     * GET CURRENT TRANSIT                             *
+     * AJAX call to the API                                                    *
+     * Queries for all of the vehicles, and adds them to my list of vehicles   *
+     * **************************************************************************
+     */
 
     private class GetCurrentTransit extends AsyncTask<Void, Void, Void> {
 
@@ -160,14 +174,14 @@ public class PostRequest {
         while (reader.hasNext()) {
             String tag = reader.nextName();
 
-            if (reader.peek()!= JsonToken.NULL) {
+            if (reader.peek() != JsonToken.NULL) {
                 if (tag.equals(TAG_ROUTE_ID)) {
                     v.routeId = reader.nextString();
                 } else if (tag.equals(TAG_SERVICE_ID)) {
                     v.serviceId = reader.nextString();
                 } else if (tag.equals(TAG_SHAPE_ID)) {
                     v.shapeId = reader.nextString();
-                } else if (tag.equals(TAG_TRIP_ID)){
+                } else if (tag.equals(TAG_TRIP_ID)) {
                     v.tripId = reader.nextString();
                 } else if (tag.equals(TAG_ROUTE_LONG_NAME)) {
                     v.routeLongName = reader.nextString();
@@ -208,7 +222,7 @@ public class PostRequest {
         while (reader.hasNext()) {
             String tag = reader.nextName();
 
-            if (reader.peek()!= JsonToken.NULL) {
+            if (reader.peek() != JsonToken.NULL) {
                 if (tag.equals(TAG_ARRIVAL_TIME)) {
                     s.arrivalTime = reader.nextString();
                 } else if (tag.equals(TAG_STOP_ID)) {
@@ -237,11 +251,13 @@ public class PostRequest {
     }
 
 
-    /****************************************************************************
-     *                              GET ROUTE SHAPE                             *
-     *  AJAX call to the API                                                    *
-     *  Queries for all of the vehicles, and adds them to my list of vehicles   *
-     ****************************************************************************/
+    /**
+     * *************************************************************************
+     * GET ROUTE SHAPE                             *
+     * AJAX call to the API                                                    *
+     * Queries for all of the vehicles, and adds them to my list of vehicles   *
+     * **************************************************************************
+     */
 
     private class GetRouteShape extends AsyncTask<Vehicle, Void, List> {
 
@@ -269,6 +285,60 @@ public class PostRequest {
             } catch (Exception e) {
                 e.printStackTrace();
                 Log.e("ROUTE SHAPE", e.getMessage());
+            }
+
+            return null;
+        }
+    }
+
+
+    /**
+     * *************************************************************************
+     * GET STOP TIME PREDICTION                         *
+     * AJAX call to the LA Metro API                                           *
+     * Queries for the stop time prediction of a vehicle to determine delays   *
+     * **************************************************************************
+     */
+
+    private class GetDelay extends AsyncTask<Vehicle, Void, Integer> {
+
+        @Override
+        protected Integer doInBackground(Vehicle... params) {
+            Vehicle v = params[0];
+            String url = "http://api.metro.net/agencies/lametro/routes/"
+                    + v.routeId.split("-")[0]
+                    + "/stops/"
+                    + v.stops.get(v.nextStop).id
+                    + "/predictions/";
+
+            Log.d("Delay", url);
+
+            DefaultHttpClient client = new DefaultHttpClient();
+            HttpGet httpGet = new HttpGet(url);
+
+            try {
+
+                HttpResponse execute = client.execute(httpGet);
+                InputStream content = execute.getEntity().getContent();
+
+                BufferedReader r = new BufferedReader(new InputStreamReader(content));
+                StringBuilder total = new StringBuilder();
+                String line;
+                while ((line = r.readLine()) != null) {
+                    total.append(line);
+                }
+
+                Log.d("Delay", total.toString());
+
+                JSONObject jsonObject = new JSONObject(total.toString());
+                JSONArray array = jsonObject.getJSONArray("items");
+                JSONObject object = array.getJSONObject(0);
+                float seconds = Float.valueOf(object.getString("seconds"));
+                mListener.VehicleDelayResponse(v, seconds);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
 
             return null;
