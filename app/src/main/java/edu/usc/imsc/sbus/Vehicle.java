@@ -17,7 +17,6 @@ import java.util.List;
  */
 public class Vehicle {
 
-    boolean nearby;
     boolean hasFocus;
 
     String routeId;
@@ -36,7 +35,6 @@ public class Vehicle {
 
     public Vehicle() {
         stops = new ArrayList<>();
-        nearby = false;
         hasFocus = false;
         currentLocationIndex = 0;
         prevStop = 0;
@@ -116,8 +114,5 @@ public class Vehicle {
         return new GeoPoint(lat, lon);
     }
 
-    public boolean isNearby() {
-        return nearby;
-    }
     public boolean hasFocus() { return hasFocus; }
 }

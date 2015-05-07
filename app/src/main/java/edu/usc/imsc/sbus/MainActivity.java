@@ -1,51 +1,35 @@
 package edu.usc.imsc.sbus;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
-import org.osmdroid.bonuspack.overlays.Marker;
 import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
-import org.osmdroid.bonuspack.routing.RoadNode;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.TilesOverlay;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 public class MainActivity extends Activity implements LocationListener, PostRequest.PostRequestListener, MyOverlay.VehicleClickListener {
-
-    final private double MAP_DEFAULT_LATITUDE = 34.0;
-    final private double MAP_DEFAULT_LONGITUDE = -118.2;
 
     private Location mLocation;
 
@@ -60,7 +44,6 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
 
     private VehiclesAdapter mAdapter;
     private AutoCompleteTextView mSearchText;
-    private ImageButton mSearchButton;
     private View vehicleInfoBox;
     private TextView vehicleName;
     private TextView stopName;
@@ -71,14 +54,13 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     private TextView selectedStopName;
     private TextView selectedStopTime;
 
-    private boolean bDefaultZoom = true;
-    private int defaultZoom = 17;
-
-    private boolean updateVehicleRealTime = true;
+    //    private boolean bDefaultZoom = true;
+    private int defaultZoom = 16;
+    private int defaultDistance = 5000;
 
     private List<Vehicle> mVehicles;
 
-    private boolean bShowingBusStops;
+    private ProgressDialog mProgressLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +68,7 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         setContentView(R.layout.activity_main);
 
         mMap = (MapView) findViewById(R.id.map);
+//        mMap.setTileSource(TileSourceFactory.MAPNIK);
 
         MapTileProviderBasic provider = new MapTileProviderBasic(getApplicationContext());
         provider.setTileSource(TileSourceFactory.PUBLIC_TRANSPORT);
@@ -99,54 +82,19 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         /* Set a Default Map Point */
         mMapController = mMap.getController();
         mMapController.setZoom(defaultZoom);
-        GeoPoint startPoint = new GeoPoint(MAP_DEFAULT_LATITUDE, MAP_DEFAULT_LONGITUDE);
-        mMapController.setCenter(startPoint);
 
         // Create and add Vehicle Overlay
-        mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.vehicle), this);
+        mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_blue), this);
         mMap.getOverlays().add(mVehicleOverlay.getOverlay());
         // Create and add a Stops Overlay
-        mStopsOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_blue), this);
+        mStopsOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_stop), this);
         mMap.getOverlays().add(mStopsOverlay.getOverlay());
         // Create and add a road manager
         mRoadManager = new OSRMRoadManager();
 
         mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        Location lastLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-        bShowingBusStops = false;
-
-        if (lastLocation != null) {
-            updateLocation(lastLocation);
-            if (bDefaultZoom) {
-                mMapController.setZoom(defaultZoom);
-                bDefaultZoom = false;
-            }
-
-        }
-
-        if (mLocation != null) {
-            updateLocation(mLocation);
-            if (bDefaultZoom) {
-                mMapController.setZoom(defaultZoom);
-                bDefaultZoom = false;
-            }
-        }
 
         mVehicles = new ArrayList<>();
-
-//        ConnectivityManager connMgr = (ConnectivityManager)
-//                getSystemService(Context.CONNECTIVITY_SERVICE);
-//        NetworkInfo networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-//        boolean isWifiConn = networkInfo.isConnected();
-//        if (isWifiConn) {
-//            createTaskGetCurrentVehicles();
-//        } else {
-//            Toast.makeText(this, "Please connect to wifi and try again.", Toast.LENGTH_SHORT).show();
-//        }
-
-        /* Load the vehicles asynchronously */
-        createTaskGetCurrentVehicles();
 
         /****************************************
          UI Handling
@@ -165,7 +113,6 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         selectedStopTime = (TextView) findViewById(R.id.selected_stop_time);
 
         mSearchText = (AutoCompleteTextView) findViewById(R.id.searchText);
-        mSearchButton = (ImageButton) findViewById(R.id.searchButton);
 
         mSearchText.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -178,6 +125,18 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
             }
         });
 
+        /* Load the vehicles asynchronously */
+
+        mProgressLocation = new ProgressDialog(this);
+        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
+        mProgressLocation.setCancelable(false);
+
+        if (mLocation == null) {
+            mProgressLocation.show();
+        } else {
+            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
+            mMapController.setCenter(startPoint);
+        }
     }
 
 
@@ -204,51 +163,32 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
      */
     public void displayMapVehicles() {
         findViewById(R.id.text_loading_vehicles).setVisibility(View.GONE);
-//        mVehicleOverlay.clearItems();
         for (Vehicle v : mVehicles) {
-            GeoPoint geoPoint = v.getCurrentLocation();
-
-            if (geoPoint != null) {
-
-                if (mLocation != null) {
-                    GeoPoint cLoc = new GeoPoint(mLocation);
-                    // If the bus is more than ~3 miles away, don't show
-                    // TODO - add an option for the user to show more
-                    if (cLoc.distanceTo(geoPoint) > 5000) {
-                        v.nearby = false;
-                    } else {
-                        v.nearby = true;
-                    }
+            if (mVehicleOverlay.updateVehicle(v)) {
+                if (v.hasFocus) {
+                    // Update the route
+                    mMap.getOverlays().remove(mVehiclePath);
+                    displayVehicleRoute(v);
+                    // Update the info box
+                    vehicleName.setText(v.stopHeadsign);
+                    stopName.setText(v.stops.get(v.nextStop).name);
+                    stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
                 }
+            } else {
+                VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, v.getCurrentLocation(), v);
+                if (v.hasFocus) {
+                    // Update the route
+                    mMap.getOverlays().remove(mVehiclePath);
+                    displayVehicleRoute(v);
+                    // Set the marker to vehicle selected
+                    vehicleItem.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+                    // Update the info box
+                    vehicleName.setText(v.stopHeadsign);
+                    stopName.setText(v.stops.get(v.nextStop).name);
+                    stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
 
-                if (v.isNearby() || mLocation == null) {
-                    if (mVehicleOverlay.updateVehicle(v)) {
-                        if (v.hasFocus) {
-                            // Update the route
-                            mMap.getOverlays().remove(mVehiclePath);
-                            displayVehicleRoute(v);
-                            // Update the info box
-                            vehicleName.setText(v.stopHeadsign);
-                            stopName.setText(v.stops.get(v.nextStop).name);
-                            stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-                        }
-                    } else {
-                        VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, geoPoint, v);
-                        if (v.hasFocus) {
-                            // Update the route
-                            mMap.getOverlays().remove(mVehiclePath);
-                            displayVehicleRoute(v);
-                            // Set the marker to vehicle selected
-                            vehicleItem.setMarker(getResources().getDrawable(R.drawable.vehicle_selected));
-                            // Update the info box
-                            vehicleName.setText(v.stopHeadsign);
-                            stopName.setText(v.stops.get(v.nextStop).name);
-                            stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-
-                        }
-                        mVehicleOverlay.addItem(vehicleItem);
-                    }
                 }
+                mVehicleOverlay.addItem(vehicleItem);
             }
         }
         mMap.invalidate();
@@ -330,6 +270,26 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         new PostRequest().getVehicleRoute(this, v);
     }
 
+    private List<Vehicle> filterVehiclesByDistance() {
+        List<Vehicle> closeVehicles = new ArrayList<>();
+
+        for (Vehicle v : mVehicles) {
+
+            GeoPoint geoPoint = v.getCurrentLocation();
+
+            if (geoPoint != null) {
+
+                GeoPoint cLoc = new GeoPoint(mLocation);
+                // If the bus is more than ~3 miles away, don't show
+                if (cLoc.distanceTo(geoPoint) < defaultDistance) {
+                    closeVehicles.add(v);
+                }
+            }
+        }
+
+        return closeVehicles;
+    }
+
     /**
      * *************************************
      * Location Listener overrides
@@ -340,6 +300,15 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     public void onLocationChanged(Location location) {
         // TODO - add a check to trim the vehicles displayed
         mLocation = location;
+        if (mProgressLocation.isShowing()) {
+            mProgressLocation.dismiss();
+            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
+            mMapController.setCenter(startPoint);
+
+            if (mVehicles != null && !mVehicles.isEmpty()) {
+                mVehicles = filterVehiclesByDistance();
+            }
+        }
     }
 
     @Override
@@ -382,10 +351,6 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     public void onCurrentLocationClick(View v) {
         if (mLocation != null) {
             Toast.makeText(this, "Finding Current Location", Toast.LENGTH_SHORT).show();
-            if (bDefaultZoom) {
-                mMapController.setZoom(12);
-                bDefaultZoom = false;
-            }
             updateLocation(mLocation);
         } else {
             Toast.makeText(this, "Current Location Not Known", Toast.LENGTH_SHORT).show();
@@ -421,15 +386,20 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
     @Override
     public void CurrentTransitResponse(List<Vehicle> vehicles) {
         mVehicles = vehicles;
+        if (mLocation != null) {
+            mVehicles = filterVehiclesByDistance();
+        }
+
         if (mVehicles != null) {
+
             // This will update the busses every 10 seconds
             MapThread mapThread = new MapThread(this);
             mapThread.start();
 
             mAdapter = new VehiclesAdapter(this, R.layout.vehicle_search_item, mVehicles);
             mSearchText.setAdapter(mAdapter);
-        }
-        else
+
+        } else
             Toast.makeText(this, "Vehicles Not Found", Toast.LENGTH_SHORT).show();
     }
 
@@ -438,9 +408,6 @@ public class MainActivity extends Activity implements LocationListener, PostRequ
         Calendar c = Calendar.getInstance();
 
         int prediction = (int) seconds;
-
-        int predictionMinutes = prediction / 60;
-        int predictionSeconds = prediction % 60;
 
         int hour = c.get(Calendar.HOUR_OF_DAY);
         int minute = c.get(Calendar.MINUTE);

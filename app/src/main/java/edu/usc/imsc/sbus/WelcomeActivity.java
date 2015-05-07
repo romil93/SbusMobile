@@ -54,7 +54,8 @@ public class WelcomeActivity extends ActionBarActivity {
                 if (!mWorkLocation.getText().toString().trim().isEmpty()) {
                     sp.edit().putString("work", mWorkLocation.getText().toString().trim()).commit();
                 }
-                startActivity(new Intent(WelcomeActivity.this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY));
+                startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
+                finish();
             }
         });
     }
