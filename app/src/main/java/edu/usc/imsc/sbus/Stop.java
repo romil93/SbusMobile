@@ -5,13 +5,24 @@ package edu.usc.imsc.sbus;
  */
 public class Stop {
 
-    String id;
-    String name;
-    int sequence;
-    String arrivalTime;
+    public Stop() {
 
-    double latitude;
-    double longitude;
+    }
+
+    public Stop(String id, String name, double latitude, double longitude) {
+        this.id = id;
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
+    public String id;
+    public String name;
+    public double latitude;
+    public double longitude;
+
+    public int sequence;
+    public String arrivalTime;
 
     boolean hasFocus;
 }

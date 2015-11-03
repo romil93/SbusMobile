@@ -10,64 +10,67 @@
         android:layout_height="match_parent"
         android:clickable="true" />
 
-    <AutoCompleteTextView
-        android:id="@+id/searchText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#aaFFFFFF"
-        android:cursorVisible="false"
-        android:hint="search for public transit vehicles"
-        android:imeOptions="actionSearch"
-        android:inputType="textPostalAddress"
-        android:minHeight="40dp"
-        android:padding="12dp" />
+    <!--<AutoCompleteTextView-->
+    <!--android:id="@+id/searchText"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:background="#aaFFFFFF"-->
+    <!--android:cursorVisible="false"-->
+    <!--android:hint="search for public transit vehicles"-->
+    <!--android:imeOptions="actionSearch"-->
+    <!--android:inputType="textPostalAddress"-->
+    <!--android:minHeight="40dp"-->
+    <!--android:padding="12dp" />-->
 
-    <ImageButton
-        android:id="@+id/searchButton"
+    <Button
+        android:id="@+id/travel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_marginRight="4dp"
-        android:background="#00FFFFFF"
-        android:onClick="onSearchClick"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_menu_search"
-        android:visibility="gone" />
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/button_rounded_rectangle"
+        android:onClick="onTravelClick"
+        android:paddingLeft="30dp"
+        android:paddingRight="30dp"
+        android:text="TRAVEL"
+        android:textColor="#444444" />
 
     <ImageButton
         android:id="@+id/my_location"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/searchText"
-        android:layout_marginRight="4dp"
-        android:layout_marginTop="4dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="4dp"
+        android:layout_marginLeft="4dp"
         android:background="@drawable/button_background"
         android:onClick="onCurrentLocationClick"
         android:padding="8dp"
-        android:src="@android:drawable/ic_menu_mylocation" />
+        android:src="@drawable/ic_action_location_found" />
 
     <ImageButton
-        android:id="@+id/alerts"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/my_location"
-        android:layout_marginRight="4dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/button_background"
-        android:onClick="onInfoClick"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_menu_preferences" />
-
-    <TextView
-        android:id="@+id/text_loading_vehicles"
+        android:id="@+id/settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:background="#aaFFFFFF"
-        android:gravity="right"
+        android:layout_marginBottom="4dp"
+        android:layout_marginRight="4dp"
+        android:background="@drawable/button_background"
+        android:onClick="onSettingsClick"
+        android:padding="8dp"
+        android:src="@drawable/ic_action_settings" />
+
+    <TextView
+        android:id="@+id/text_loading_vehicles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignTop="@+id/my_location"
+        android:background="#eeFFFFFF"
+        android:elevation="2dp"
+        android:gravity="center"
         android:padding="8dp"
         android:text="Finding Public Transit . . ." />
 
@@ -76,13 +79,13 @@
         layout="@layout/stop_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/vehicle_info" />
+        android:layout_below="@+id/vehicle_info" />
 
     <include
         android:id="@+id/vehicle_info"
         layout="@layout/vehicle_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true" />
+        android:layout_alignParentTop="true" />
 
 </RelativeLayout>

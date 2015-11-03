@@ -16,6 +16,10 @@ import org.apache.http.protocol.HTTP;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.Road;
+import org.osmdroid.bonuspack.routing.RoadManager;
+import org.osmdroid.util.GeoPoint;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +37,7 @@ import java.util.Locale;
 public class PostRequest {
     private static final String POST_GET_CURRENT_TRANSIT = "http://gd2.usc.edu:11570/getCurrentTransit";
     private static final String POST_GET_ROUTE_SHAPE = "http://gd2.usc.edu:11570/getRouteShape";
+    private static final String POST_GET_STOPS = "https://9d2302df.ngrok.io/API/stops";//"http://gd2.usc.edu:11570/getAllStops";
 
     private static final String TAG_ROUTE_ID = "ROUTE_ID";
     private static final String TAG_SERVICE_ID = "SERVICE_ID";
@@ -50,33 +55,61 @@ public class PostRequest {
     private static final String TAG_STOP_NAME = "STOP_NAME";
     private static final String TAG_STOP_SEQUENCE = "STOP_SEQUENCE";
 
-    public interface PostRequestListener {
-        void CurrentTransitResponse(List<Vehicle> vehicles);
-//        void RouteShapeResponse();
-        void VehicleDelayResponse(Vehicle v, float seconds);
-    }
+//    public interface PostRequestListener {
+//        void CurrentTransitResponse(List<Vehicle> vehicles);
+////        void RouteShapeResponse();
+//        void VehicleDelayResponse(Vehicle v, float seconds);
+//        void RoadResponse(Road road, ArrayList<GeoPoint> waypoints, Vehicle v);
+//        void StopsResponse(List<Stop> stops);
+//    }
 
-    private PostRequestListener mListener;
+    private MainActivity mActivity;
+    private DataRequestListener mListener;
+    private Vehicle mVehicle;
 
-    public void getCurrentVehicles(PostRequestListener listener) {
+    public void getCurrentVehicles(MainActivity activity, DataRequestListener listener) {
+        mActivity = activity;
         mListener = listener;
 
         GetCurrentTransit task = new GetCurrentTransit();
         task.execute();
     }
 
-    public void getVehicleRoute(PostRequestListener listener, Vehicle v) {
+    public void getAllStops(MainActivity activity, DataRequestListener listener) {
+        mActivity = activity;
+        mListener = listener;
+
+        Log.d("GETSTOPS", "function called");
+
+        GetAllStops task = new GetAllStops();
+        task.execute();
+
+        Log.d("GETSTOPS", "task executed");
+    }
+
+    public void getVehicleRoute(MainActivity activity, DataRequestListener listener, Vehicle v) {
+        mActivity = activity;
         mListener = listener;
 
         GetRouteShape task = new GetRouteShape();
         task.execute(v);
     }
 
-    public void getVehicleDelay(PostRequestListener listener, Vehicle v) {
+    public void getVehicleDelay(MainActivity activity, DataRequestListener listener, Vehicle v) {
+        mActivity = activity;
         mListener = listener;
 
         GetDelay task = new GetDelay();
         task.execute(v);
+    }
+
+    public void getRoad(MainActivity activity, DataRequestListener listener, ArrayList<GeoPoint> waypoints, Vehicle v) {
+        mActivity = activity;
+        mListener = listener;
+        mVehicle = v;
+
+        GetRoad task = new GetRoad();
+        task.execute(waypoints);
     }
 
     /**
@@ -291,6 +324,40 @@ public class PostRequest {
         }
     }
 
+    /**
+     * GET ALL STOPS
+     * AJAX call to the API
+     */
+
+    private class GetAllStops extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            Log.d("GETSTOPS", "doInBackground");
+            DefaultHttpClient client = new DefaultHttpClient();
+//            HttpPost httpPost = new HttpPost(POST_GET_STOPS);
+            HttpGet httpGet = new HttpGet(POST_GET_STOPS);
+
+            try {
+
+                Log.d("GETSTOPS", "about to execute");
+                HttpResponse execute = client.execute(httpGet);
+                Log.d("GETSTOPS", "about to get content");
+                InputStream content = execute.getEntity().getContent();
+
+                Log.d("GETSTOPS", "about to print stops");
+//                Log.d("GETSTOPS", content.toString());
+                Log.d("GETSTOPS", convertStreamToString(content));
+
+            } catch (IOException e) {
+                Log.d("GETSTOPS", "execute failed");
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    }
+
 
     /**
      * *************************************************************************
@@ -342,6 +409,33 @@ public class PostRequest {
             }
 
             return null;
+        }
+    }
+
+    /**
+     * *************************************************************************
+     * GET STOP TIME PREDICTION                         *
+     * AJAX call to the LA Metro API                                           *
+     * Queries for the stop time prediction of a vehicle to determine delays   *
+     * **************************************************************************
+     */
+
+    private class GetRoad extends AsyncTask<ArrayList<GeoPoint>, Void, Void> {
+
+        @Override
+        protected Void doInBackground(ArrayList<GeoPoint>... params) {
+
+            mListener.RoadResponse(mActivity.getRoadManager().getRoad(params[0]), params[0], mVehicle);
+
+            return null;
+        }
+    }
+
+    String convertStreamToString(java.io.InputStream is) {
+        try {
+            return new java.util.Scanner(is).useDelimiter("\\A").next();
+        } catch (java.util.NoSuchElementException e) {
+            return "";
         }
     }
 }

@@ -52,7 +52,7 @@ public class MyOverlay {
         ArrayList<OverlayItem> items = new ArrayList<>();
         ResourceProxy resourceProxy = new DefaultResourceProxyImpl(mContext);
 
-        mOverlay = new ItemizedIconOverlay<OverlayItem>(
+        mOverlay = new ItemizedIconOverlay<>(
                 items, marker,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
@@ -104,7 +104,7 @@ public class MyOverlay {
 
         mOverlay.removeItem(mCurrentLocationItem);
         mCurrentLocationItem = new OverlayItem("My Location", "My Current Location", geoPoint);
-        mCurrentLocationItem.setMarker(mContext.getResources().getDrawable(android.R.drawable.ic_menu_mylocation));
+        mCurrentLocationItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_action_location_found));
         mOverlay.addItem(mCurrentLocationItem);
     }
 
