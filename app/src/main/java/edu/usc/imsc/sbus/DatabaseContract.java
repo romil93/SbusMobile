@@ -34,6 +34,13 @@ public final class DatabaseContract {
         public static final String COLUMN_NAME_LONGITUDE = "stopLongitude";
     }
 
+    //    Inner class that defines the Connections table (Vehicles and Stops)
+    public static abstract class DataConnection implements BaseColumns {
+        public static final String TABLE_NAME = "connection";
+        public static final String COLUMN_NAME_STOP_ID = "stopId";
+        public static final String COLUMN_NAME_VEHICLE_ID = "vehicleId";
+    }
+
     private static final String TEXT_TYPE = " TEXT";
     private static final String FLOAT_TYPE = " REAL";
     private static final String COMMA_SEP = ",";
@@ -45,9 +52,33 @@ public final class DatabaseContract {
                     DataStop.COLUMN_NAME_STOP_NAME + TEXT_TYPE + COMMA_SEP +
                     DataStop.COLUMN_NAME_LATITUDE + FLOAT_TYPE + COMMA_SEP +
                     DataStop.COLUMN_NAME_LONGITUDE + FLOAT_TYPE +
-            " unique)";
+                    " unique)";
+
+    public static final String SQL_CREATE_VEHICLE_ENTRIES =
+            "CREATE TABLE " + DataVehicle.TABLE_NAME + " (" +
+                    DataVehicle._ID + " INTEGER PRIMARY KEY," +
+                    DataVehicle.COLUMN_NAME_ROUTE_ID + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_SERVICE_ID + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_SHAPE_ID + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_TRIP_ID + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_ROUTE_LONG_NAME + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_ROUTE_SHORT_NAME + TEXT_TYPE + COMMA_SEP +
+                    DataVehicle.COLUMN_NAME_STOP_HEADSIGN + TEXT_TYPE +
+                    " unique)";
+
+    public static final String SQL_CREATE_CONNECTION_ENTRIES =
+            "CREATE TABLE " + DataConnection.TABLE_NAME + " (" +
+                    DataConnection.COLUMN_NAME_STOP_ID + " INTEGER PRIMARY KEY," +
+                    DataConnection.COLUMN_NAME_VEHICLE_ID + " INTEGER PRIMARY KEY," +
+                    " unique)";
 
     public static final String SQL_DELETE_STOP_ENTRIES =
             "DROP TABLE IF EXISTS " + DataStop.TABLE_NAME;
+
+    public static final String SQL_DELETE_VEHICLE_ENTRIES =
+            "DROP TABLE IF EXISTS " + DataVehicle.TABLE_NAME;
+
+    public static final String SQL_DELETE_CONNECTION_ENTRIES =
+            "DROP TABLE IF EXISTS " + DataConnection.TABLE_NAME;
 
 }

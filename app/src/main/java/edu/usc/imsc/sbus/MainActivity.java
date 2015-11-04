@@ -56,7 +56,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
-    private final int StopsFilterDistance = 5000; // units in meters
+    private final int StopsFilterDistance = 1000; // units in meters
 
     private List<Vehicle> mVehicles;
 
@@ -151,7 +151,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
         /* Start loading the stops, either from server or from sqlite */
         boolean stopsNeedRefresh = false;
-        StopsRequest.RequestType stopsRequestType = stopsNeedRefresh ? StopsRequest.RequestType.Server : StopsRequest.RequestType.Local;
+        RequestType stopsRequestType = stopsNeedRefresh ? RequestType.Server : RequestType.Local;
         new StopsRequest(stopsRequestType).getAllStops(this, this);
     }
 
@@ -225,8 +225,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
             }
         }
 
-        PostRequest roadRequest = new PostRequest();
-        roadRequest.getRoad(this, this, waypoints, v);
+//        PostRequest roadRequest = new PostRequest();
+//        roadRequest.getRoad(this, this, waypoints, v);
     }
 
     /**
@@ -257,11 +257,11 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
      * Make a post request to load the current vehicles
      */
     private void createTaskGetCurrentVehicles() {
-        new PostRequest().getCurrentVehicles(this, this);
+//        new PostRequest().getCurrentVehicles(this, this);
     }
 
     private void createTaskGetVehicleRoute(Vehicle v) {
-        new PostRequest().getVehicleRoute(this, this, v);
+//        new PostRequest().getVehicleRoute(this, this, v);
     }
 
 //    private void createTaskGetAllStops() {
@@ -499,12 +499,16 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         List<OverlayItem> stopOverlayItems = new ArrayList<>();
         for (Stop s : nearbyStops) {
             stopOverlayItems.add(new StopOverlayItem(s));
-            Log.d("StopsResponse", "Adding Stop: " + s.name);
         }
 
 //        add all overlay items
         mStopsOverlay.addItems(stopOverlayItems);
-        mMap.invalidate();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mMap.invalidate();
+            }
+        });
     }
 
     /**
@@ -519,8 +523,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         hideVehicleStops();
         stopInfoBox.setVisibility(View.GONE);
         if (v.hasFocus) {
-            PostRequest post = new PostRequest();
-            post.getVehicleDelay(this, this, v);
+//            PostRequest post = new PostRequest();
+//            post.getVehicleDelay(this, this, v);
             vehicleName.setText(v.stopHeadsign);
             stopName.setText(v.stops.get(v.nextStop).name);
             stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
@@ -566,6 +570,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     /**
      * Filter Neary Stops
+     *
      * @param stops
      * @return - a list of stops that are within a specified distance to the user
      */
@@ -580,25 +585,21 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     }
 
     /**
-     *
      * @param s - The stop that you want to measure the distance to
      * @param x - The distance (in meters) you want to compare to
      * @return - true/false if the distance to the stop is within the range of x
      * If the stop location or user location is null, this returns true
      */
     boolean stopIsWithinXMiles(Stop s, int x) {
-        if (false) {
-            GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
-            GeoPoint myLocation = new GeoPoint(mLocation);
+        GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
+//        GeoPoint myLocation = new GeoPoint(mLocation);
+        GeoPoint myLocation = new GeoPoint(34.0205, -118.2856);
 
-            if (stopLocation != null && myLocation != null) {
-                if (myLocation.distanceTo(stopLocation) < x) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
+        if (stopLocation != null && myLocation != null) {
+            if (myLocation.distanceTo(stopLocation) < x) {
                 return true;
+            } else {
+                return false;
             }
         } else {
             return true;

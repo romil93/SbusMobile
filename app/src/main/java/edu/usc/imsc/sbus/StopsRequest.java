@@ -23,11 +23,7 @@ import java.util.regex.Pattern;
  */
 public class StopsRequest {
 
-    public enum RequestType {
-        Local, Server
-    }
-
-    private static final String API_CALL_ALL_STOPS = "http://6ca4dee6.ngrok.io/API/stops";
+    private static final String API_CALL_ALL_STOPS = "http://2b0521d2.ngrok.io/API/stops";
 
     private final RequestType mRequestType;
     private MainActivity mActivity;
@@ -41,30 +37,8 @@ public class StopsRequest {
         mActivity = activity;
         mListener = listener;
 
-        if (mRequestType.equals(RequestType.Local)) {
-
-            DatabaseHelper dbh = new DatabaseHelper(mActivity);
-            Cursor cursor = dbh.retrieveAllStops();
-            List<Stop> stops = new ArrayList<>();
-
-            if (cursor.moveToFirst()) {
-                do {
-                    String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
-                    String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-                    double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
-                    double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
-
-                    stops.add(new Stop(id, name, lat, lon));
-                } while (cursor.moveToNext());
-            }
-
-            mListener.StopsResponse(stops);
-
-        } else if (mRequestType.equals(RequestType.Server)) {
-
-            GetAllStops task = new GetAllStops();
-            task.execute();
-        }
+        GetAllStops task = new GetAllStops();
+        task.execute();
     }
 
     /**
@@ -78,82 +52,81 @@ public class StopsRequest {
 
         @Override
         protected Void doInBackground(Void... params) {
-            Log.d(LOG_TAG, "Task Initiated");
-            DefaultHttpClient client = new DefaultHttpClient();
-//            HttpPost httpPost = new HttpPost(POST_GET_STOPS);
-            HttpGet httpGet = new HttpGet(API_CALL_ALL_STOPS);
 
-            try {
-                HttpResponse execute = client.execute(httpGet);
-                Log.d(LOG_TAG, "Task Excuted");
-                InputStream content = execute.getEntity().getContent();
+//            Local Stops Request
+            if (mRequestType.equals(RequestType.Local)) {
+                DatabaseHelper dbh = new DatabaseHelper(mActivity);
+                Cursor cursor = dbh.retrieveAllStops();
+                List<Stop> stops = new ArrayList<>();
 
-                Log.d(LOG_TAG, "Task Retrieved Content");
+                if (cursor.moveToFirst()) {
+                    do {
+                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
+                        String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
+                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
+                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
 
-                DataInputStream data = new DataInputStream(content);
+                        stops.add(new Stop(id, name, lat, lon));
+                    } while (cursor.moveToNext());
+                }
+
+                mListener.StopsResponse(stops);
+
+//                Server Stops Request
+            } else if (mRequestType.equals(RequestType.Server)) {
+
+                Log.d(LOG_TAG, "Task Initiated");
+                DefaultHttpClient client = new DefaultHttpClient();
+                HttpGet httpGet = new HttpGet(API_CALL_ALL_STOPS);
+
+                try {
+                    HttpResponse execute = client.execute(httpGet);
+                    Log.d(LOG_TAG, "Task Excuted");
+                    InputStream content = execute.getEntity().getContent();
+
+                    Log.d(LOG_TAG, "Task Retrieved Content");
+
+                    DataInputStream data = new DataInputStream(content);
 
 //                Create database helper to enter data
-                DatabaseHelper dbh = new DatabaseHelper(mActivity);
+                    DatabaseHelper dbh = new DatabaseHelper(mActivity);
 
 //                Create pattern for the scanner to search for in the input stream
-                Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^\\]]+)");
-                Scanner sc = new Scanner(data);
-                sc.useDelimiter("\\[");
+                    Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^\\]]+)");
+                    Scanner sc = new Scanner(data);
+                    sc.useDelimiter("\\[");
 
-                while (sc.hasNext()) {
-                    String stopData = sc.next();
+                    while (sc.hasNext()) {
+                        String stopData = sc.next();
 
-                    Matcher matcher = regex.matcher(stopData);
+                        Matcher matcher = regex.matcher(stopData);
 
-                    if (matcher.find()) {
-                        String stopId = matcher.group(1);
-                        String stopName = matcher.group(2);
-                        String stopLat = matcher.group(3);
-                        String stopLon = matcher.group(4);
+                        if (matcher.find()) {
+                            String stopId = matcher.group(1);
+                            String stopName = matcher.group(2);
+                            String stopLat = matcher.group(3);
+                            String stopLon = matcher.group(4);
 
 //                        Log.d(LOG_TAG, String.format("%-10s%-60s%-20s%-20s", stopId, stopName, stopLat, stopLon));
 //                        Enter stop data into database
-                        Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
+                            Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
 
-                        long stopPrimaryKey = dbh.insertStop(s);
-                        Log.d(LOG_TAG, "Primary Key: " + String.valueOf(stopPrimaryKey));
-                    } else {
-                        Log.d(LOG_TAG, stopData);
+                            long stopPrimaryKey = dbh.insertStop(s);
+//                            Log.d(LOG_TAG, "Primary Key: " + String.valueOf(stopPrimaryKey));
+                        } else {
+                            Log.d(LOG_TAG, stopData);
+                        }
                     }
+
+                    data.close();
+
+                } catch (IOException e) {
+                    Log.d(LOG_TAG, "Task Execution Failed");
+                    e.printStackTrace();
                 }
-
-                data.close();
-
-//                Log.d(LOG_TAG, convertStreamToString(content));
-
-            } catch (IOException e) {
-                Log.d(LOG_TAG, "Task Execution Failed");
-                e.printStackTrace();
             }
 
             return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-
-            Log.d(LOG_TAG, "Post Execute");
-
-            DatabaseHelper dbh = new DatabaseHelper(mActivity);
-            Cursor cursor = dbh.retrieveAllStops();
-
-            if (cursor.moveToFirst()) {
-
-                String stopName = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-                Log.d(LOG_TAG, "Stop Name: " + stopName);
-
-                while (cursor.moveToNext()) {
-                    String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-                    Log.d(LOG_TAG, "Stop Name: " + name);
-                }
-            }
-
-//            mListener.StopsResponse();
         }
     }
 }
