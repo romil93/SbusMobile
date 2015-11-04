@@ -144,7 +144,7 @@ public class MyOverlay {
 
                 if (stop == s) {
                     mOverlay.removeItem(mOverlay.getItem(i));
-                    StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
+                    StopOverlayItem stopMarker = new StopOverlayItem(s);
                     if (mPreviousSelectedStopItem != null) {
                         if (mPreviousSelectedStopItem.stop == stop) {
                             mPreviousSelectedStopItem = stopMarker;

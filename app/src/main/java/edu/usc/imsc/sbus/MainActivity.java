@@ -9,7 +9,6 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,8 +22,8 @@ import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.TilesOverlay;
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -57,7 +56,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
-    private int defaultDistance = 5000;
+    private final int StopsFilterDistance = 5000; // units in meters
 
     private List<Vehicle> mVehicles;
 
@@ -70,22 +69,22 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        loadAllStops();
-
+        /* Initialize the map */
         mMap = (MapView) findViewById(R.id.map);
-
         MapTileProviderBasic provider = new MapTileProviderBasic(getApplicationContext());
         provider.setTileSource(TileSourceFactory.PUBLIC_TRANSPORT);
         TilesOverlay tilesOverlay = new TilesOverlay(provider, this.getBaseContext());
         mMap.getOverlays().add(tilesOverlay);
 
         /* Enable Zoom Controls */
+        mMap.setBuiltInZoomControls(true);
         mMap.setMultiTouchControls(true);
         mMap.setMinZoomLevel(8);
 
         /* Set a Default Map Point */
         mMapController = mMap.getController();
         mMapController.setZoom(defaultZoom);
+        mMapController.setCenter(new GeoPoint(34.0205, -118.2856));
 
         // Create and add Vehicle Overlay
         mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_blue), this);
@@ -97,6 +96,11 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         mRoadManager = new OSRMRoadManager();
 
         mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        /* Set map center point if location exists */
+        if (mLocation != null) {
+            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
+            mMapController.setCenter(startPoint);
+        }
 
         mVehicles = new ArrayList<>();
 
@@ -131,19 +135,24 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
         /* Load the vehicles asynchronously */
 //        createTaskGetCurrentVehicles();
-//        createTaskGetAllStops();
 
 
-        mProgressLocation = new ProgressDialog(this);
-        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
-        mProgressLocation.setCancelable(false);
+        /* Make sure the user has location turned on */
+//        mProgressLocation = new ProgressDialog(this);
+//        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
+//        mProgressLocation.setCancelable(false);
 
-        if (mLocation == null) {
-            mProgressLocation.show();
-        } else {
-            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
-            mMapController.setCenter(startPoint);
-        }
+//        if (mLocation == null) {
+//            mProgressLocation.show();
+//        } else {
+//            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
+//            mMapController.setCenter(startPoint);
+//        }
+
+        /* Start loading the stops, either from server or from sqlite */
+        boolean stopsNeedRefresh = false;
+        StopsRequest.RequestType stopsRequestType = stopsNeedRefresh ? StopsRequest.RequestType.Server : StopsRequest.RequestType.Local;
+        new StopsRequest(stopsRequestType).getAllStops(this, this);
     }
 
 
@@ -253,10 +262,6 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     private void createTaskGetVehicleRoute(Vehicle v) {
         new PostRequest().getVehicleRoute(this, this, v);
-    }
-
-    private void loadAllStops() {
-        new StopsRequest(StopsRequest.RequestType.Server).getAllStops(this, this);
     }
 
 //    private void createTaskGetAllStops() {
@@ -386,7 +391,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     /**
      * *************************************
-     * Post Request Overrides
+     * Data Request Overrides
      * **************************************
      */
 
@@ -399,7 +404,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
             if (mLocation != null)
                 mVehicles = filterVehiclesByDistance();
 
-            // This will update the busses every 10 seconds
+            // This will update the busses every 5 seconds
             MapThread mapThread = new MapThread(this);
             mapThread.start();
 
@@ -466,7 +471,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
                         selectedStopTime.setText(s.arrivalTime);
                     }
                 } else {
-                    StopOverlayItem stopMarker = new StopOverlayItem("Stop", s.name, g, s);
+                    StopOverlayItem stopMarker = new StopOverlayItem(s);
                     if (s.hasFocus) {
                         stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
                         selectedStopName.setText(s.name);
@@ -487,7 +492,19 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     @Override
     public void StopsResponse(List<Stop> stops) {
+//        filter stops based on location
+        List<Stop> nearbyStops = filterNearbyStops(stops);
 
+//        create overlay items
+        List<OverlayItem> stopOverlayItems = new ArrayList<>();
+        for (Stop s : nearbyStops) {
+            stopOverlayItems.add(new StopOverlayItem(s));
+            Log.d("StopsResponse", "Adding Stop: " + s.name);
+        }
+
+//        add all overlay items
+        mStopsOverlay.addItems(stopOverlayItems);
+        mMap.invalidate();
     }
 
     /**
@@ -541,6 +558,51 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     @Override
     public void onEmptyClick() {
+    }
+
+    /**************************************
+     * Helper Functions                 ***
+     **************************************/
+
+    /**
+     * Filter Neary Stops
+     * @param stops
+     * @return - a list of stops that are within a specified distance to the user
+     */
+    List<Stop> filterNearbyStops(List<Stop> stops) {
+        List<Stop> nearbyStops = new ArrayList<>();
+        for (Stop s : stops) {
+            if (stopIsWithinXMiles(s, StopsFilterDistance)) {
+                nearbyStops.add(s);
+            }
+        }
+        return nearbyStops;
+    }
+
+    /**
+     *
+     * @param s - The stop that you want to measure the distance to
+     * @param x - The distance (in meters) you want to compare to
+     * @return - true/false if the distance to the stop is within the range of x
+     * If the stop location or user location is null, this returns true
+     */
+    boolean stopIsWithinXMiles(Stop s, int x) {
+        if (false) {
+            GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
+            GeoPoint myLocation = new GeoPoint(mLocation);
+
+            if (stopLocation != null && myLocation != null) {
+                if (myLocation.distanceTo(stopLocation) < x) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
     }
 
     /*********

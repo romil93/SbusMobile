@@ -10,8 +10,12 @@ public class StopOverlayItem extends OverlayItem {
 
     public Stop stop;
 
-    public StopOverlayItem(String aTitle, String aSnippet, IGeoPoint aGeoPoint, Stop s) {
-        super(aTitle, aSnippet, aGeoPoint);
+    /**
+     *
+     * @param s         Stop data related to item
+     */
+    public StopOverlayItem(Stop s) {
+        super("Stop", s.name, s.getGeoPoint());
 
         stop = s;
     }

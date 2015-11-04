@@ -5,7 +5,7 @@ package edu.usc.imsc.sbus;
  */
 public class MapThread extends Thread {
 
-    private static final int SECONDS_PER_FRAME = 1;
+    private static final int SECONDS_PER_FRAME = 5;
     private MainActivity mainActivity;
 
     public MapThread(MainActivity a) {

@@ -11,6 +11,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,13 +27,7 @@ public class StopsRequest {
         Local, Server
     }
 
-    private static final String API_CALL_ALL_STOPS = "http://9856556e.ngrok.io/API/stops";
-
-    private static final String TAG_STOP_ID = "STOP_ID";
-    private static final String TAG_STOP_LATITUDE = "STOP_LAT";
-    private static final String TAG_STOP_LONGITUDE = "STOP_LON";
-    private static final String TAG_STOP_NAME = "STOP_NAME";
-    private static final String TAG_STOP_SEQUENCE = "STOP_SEQUENCE";
+    private static final String API_CALL_ALL_STOPS = "http://6ca4dee6.ngrok.io/API/stops";
 
     private final RequestType mRequestType;
     private MainActivity mActivity;
@@ -47,7 +43,25 @@ public class StopsRequest {
 
         if (mRequestType.equals(RequestType.Local)) {
 
+            DatabaseHelper dbh = new DatabaseHelper(mActivity);
+            Cursor cursor = dbh.retrieveAllStops();
+            List<Stop> stops = new ArrayList<>();
+
+            if (cursor.moveToFirst()) {
+                do {
+                    String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
+                    String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
+                    double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
+                    double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
+
+                    stops.add(new Stop(id, name, lat, lon));
+                } while (cursor.moveToNext());
+            }
+
+            mListener.StopsResponse(stops);
+
         } else if (mRequestType.equals(RequestType.Server)) {
+
             GetAllStops task = new GetAllStops();
             task.execute();
         }

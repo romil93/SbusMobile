@@ -1,5 +1,7 @@
 package edu.usc.imsc.sbus;
 
+import org.osmdroid.util.GeoPoint;
+
 /**
  * Created by danielCantwell on 3/24/15.
  */
@@ -25,4 +27,8 @@ public class Stop {
     public String arrivalTime;
 
     boolean hasFocus;
+
+    public GeoPoint getGeoPoint() {
+        return new GeoPoint(latitude, longitude);
+    }
 }
