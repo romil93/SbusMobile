@@ -1,5 +1,6 @@
 package edu.usc.imsc.sbus;
 
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.util.JsonReader;
 import android.util.JsonToken;
@@ -79,8 +80,26 @@ public class TransitRequest {
         @Override
         protected Void doInBackground(Void... params) {
 
+            // Local Request
             if (mRequestType.equals(RequestType.Local)) {
+//                DatabaseHelper dbh = new DatabaseHelper(mActivity);
+//                Cursor cursor = dbh.retrieveAllTransit();
+//                List<Vehicle> vehicles = new ArrayList<>();
+//
+//                if (cursor.moveToFirst()) {
+//                    do {
+//                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
+//                        String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
+//                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
+//                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
+//
+//                        vehicles.add(new Vehicle(id, name, lat, lon));
+//                    } while (cursor.moveToNext());
+//                }
+//
+//                mListener.StopsResponse(stops);
 
+            // Server Request
             } else {
                 DefaultHttpClient client = new DefaultHttpClient();
                 HttpPost httpPost = new HttpPost(API_CALL_ALL_TRANSIT);
@@ -190,6 +209,9 @@ public class TransitRequest {
             }
         }
         reader.endObject();
+
+        DatabaseHelper dbh = new DatabaseHelper(mActivity);
+        dbh.insertVehicle(v);
 
         return v;
     }

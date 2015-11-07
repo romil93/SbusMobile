@@ -49,6 +49,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     private TextView stopName;
     private TextView stopTime;
     private TextView vehicleDelay;
+    private TextView loadingVehiclesText;
 
     private View stopInfoBox;
     private TextView selectedStopName;
@@ -56,7 +57,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
-    private final int StopsFilterDistance = 1000; // units in meters
+    private final int StopsFilterDistance = 2000; // units in meters
 
     private List<Vehicle> mVehicles;
 
@@ -69,6 +70,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        loadingVehiclesText = (TextView) findViewById(R.id.text_loading_vehicles);
+
         /* Initialize the map */
         mMap = (MapView) findViewById(R.id.map);
         MapTileProviderBasic provider = new MapTileProviderBasic(getApplicationContext());
@@ -77,7 +80,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         mMap.getOverlays().add(tilesOverlay);
 
         /* Enable Zoom Controls */
-        mMap.setBuiltInZoomControls(true);
+//        mMap.setBuiltInZoomControls(true);
         mMap.setMultiTouchControls(true);
         mMap.setMinZoomLevel(8);
 
@@ -138,21 +141,19 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
 
         /* Make sure the user has location turned on */
-//        mProgressLocation = new ProgressDialog(this);
-//        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
-//        mProgressLocation.setCancelable(false);
+        mProgressLocation = new ProgressDialog(this);
+        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
+        mProgressLocation.setCancelable(false);
 
-//        if (mLocation == null) {
-//            mProgressLocation.show();
-//        } else {
-//            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
-//            mMapController.setCenter(startPoint);
-//        }
+        if (mLocation == null) {
+            mProgressLocation.show();
+        } else {
+            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
+            mMapController.setCenter(startPoint);
+        }
 
         /* Start loading the stops, either from server or from sqlite */
-        boolean stopsNeedRefresh = false;
-        RequestType stopsRequestType = stopsNeedRefresh ? RequestType.Server : RequestType.Local;
-        new StopsRequest(stopsRequestType).getAllStops(this, this);
+        new StopsRequest(RequestType.Local).getAllStops(this, this);
     }
 
 
@@ -169,9 +170,11 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         mLocationManager.removeUpdates(this);
     }
 
-    /****************************************************
-     *              MAP DISPLAY FUNCTIONS               *
-     ****************************************************/
+    /*
+     * *************************************************************************
+     *                      MAP DISPLAY FUNCTIONS
+     * *************************************************************************
+     */
 
 
     /**
@@ -229,84 +232,12 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 //        roadRequest.getRoad(this, this, waypoints, v);
     }
 
-    /**
-     * Update the user's location
-     *
-     * @param location - the user's current location
-     */
-    private void updateLocation(Location location) {
 
-        GeoPoint geoPoint = new GeoPoint(location);
-        mMapController.setCenter(geoPoint);
-        setOverlayLocation(location);
-        mMap.invalidate();
-    }
 
-    /**
-     * Update the "current location" overlay item
-     *
-     * @param location
-     */
-    private void setOverlayLocation(Location location) {
-//        MyLocationNewOverlay locationNewOverlay = new MyLocationNewOverlay(this, mMap);
-//        mMap.getOverlays().add(locationNewOverlay);
-        mVehicleOverlay.updateLocationItem(new GeoPoint(location));
-    }
-
-    /**
-     * Make a post request to load the current vehicles
-     */
-    private void createTaskGetCurrentVehicles() {
-//        new PostRequest().getCurrentVehicles(this, this);
-    }
-
-    private void createTaskGetVehicleRoute(Vehicle v) {
-//        new PostRequest().getVehicleRoute(this, this, v);
-    }
-
-//    private void createTaskGetAllStops() {
-//        new PostRequest().getAllStops(this, this);
-//    }
-
-    private List<Vehicle> filterVehiclesByDistance() {
-
-        List<Vehicle> tempVehicles = new ArrayList<>();
-        int count = 0;
-        for (Vehicle v : mVehicles) {
-
-            tempVehicles.add(v);
-
-            if (count >= 200) {
-                break;
-            }
-            count++;
-        }
-
-        return tempVehicles;
-
-//        List<Vehicle> closeVehicles = new ArrayList<>();
-//
-//        for (Vehicle v : mVehicles) {
-//
-//            GeoPoint geoPoint = v.getCurrentLocation();
-//
-//            if (geoPoint != null) {
-//
-//                GeoPoint cLoc = new GeoPoint(mLocation);
-//                // If the bus is more than ~3 miles away, don't show
-//                if (cLoc.distanceTo(geoPoint) < defaultDistance) {
-//                    closeVehicles.add(v);
-//                }
-//            }
-//        }
-//
-//        return closeVehicles;
-    }
-
-    /**
-     * *************************************
-     * Location Listener overrides
-     * **************************************
+    /*
+     * **************************************************************************
+     *                      Location Listener Overrides
+     * **************************************************************************
      */
 
     @Override
@@ -340,9 +271,32 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     }
 
     /**
-     * *************************************
-     * Button Click Handlers
-     * **************************************
+     * Update the user's location
+     *
+     * @param location - the user's current location
+     */
+    private void updateLocation(Location location) {
+        GeoPoint geoPoint = new GeoPoint(location);
+        mMapController.setCenter(geoPoint);
+        setOverlayLocation(location);
+        mMap.invalidate();
+    }
+
+    /**
+     * Update the "current location" overlay item
+     *
+     * @param location
+     */
+    private void setOverlayLocation(Location location) {
+//        MyLocationNewOverlay locationNewOverlay = new MyLocationNewOverlay(this, mMap);
+//        mMap.getOverlays().add(locationNewOverlay);
+        mVehicleOverlay.updateLocationItem(new GeoPoint(location));
+    }
+
+    /*
+     * **************************************************************************
+     *                          Button Click Handlers
+     * **************************************************************************
      */
 
     public void onTravelClick(View v) {
@@ -373,26 +327,10 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         Toast.makeText(this, "Retrieving Info", Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * *************************************
-     * Helper Functions
-     * **************************************
-     */
-
-    private void hideVehicleStops() {
-        mStopsOverlay.clearItems();
-        mMap.invalidate();
-    }
-
-    private void hideVehicleRoute() {
-        mMap.getOverlays().remove(mVehiclePath);
-        mMap.invalidate();
-    }
-
-    /**
-     * *************************************
-     * Data Request Overrides
-     * **************************************
+    /*
+     * ***************************************************************************
+     *                      Data Request Overrides
+     * ***************************************************************************
      */
 
     @Override
@@ -492,29 +430,30 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     @Override
     public void StopsResponse(List<Stop> stops) {
-//        filter stops based on location
+        // filter stops based on location
         List<Stop> nearbyStops = filterNearbyStops(stops);
 
-//        create overlay items
+        // create overlay items
         List<OverlayItem> stopOverlayItems = new ArrayList<>();
         for (Stop s : nearbyStops) {
             stopOverlayItems.add(new StopOverlayItem(s));
         }
 
-//        add all overlay items
+        // add all overlay items
         mStopsOverlay.addItems(stopOverlayItems);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                loadingVehiclesText.setVisibility(View.INVISIBLE);
                 mMap.invalidate();
             }
         });
     }
 
-    /**
-     * *************************************
-     * Map Item Clicks
-     * **************************************
+    /*
+     * ***************************************************************************
+     *                      Map Item Clicks
+     * ***************************************************************************
      */
 
     @Override
@@ -564,12 +503,51 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     public void onEmptyClick() {
     }
 
-    /**************************************
-     * Helper Functions                 ***
-     **************************************/
+    /****************************************************************************
+     *                       Helper Functions                                 ***
+     ****************************************************************************/
 
     /**
-     * Filter Neary Stops
+     * Filter Nearby Vehicles
+     * @return
+     */
+    private List<Vehicle> filterVehiclesByDistance() {
+
+        List<Vehicle> tempVehicles = new ArrayList<>();
+        int count = 0;
+        for (Vehicle v : mVehicles) {
+
+            tempVehicles.add(v);
+
+            if (count >= 200) {
+                break;
+            }
+            count++;
+        }
+
+        return tempVehicles;
+
+//        List<Vehicle> closeVehicles = new ArrayList<>();
+//
+//        for (Vehicle v : mVehicles) {
+//
+//            GeoPoint geoPoint = v.getCurrentLocation();
+//
+//            if (geoPoint != null) {
+//
+//                GeoPoint cLoc = new GeoPoint(mLocation);
+//                // If the bus is more than ~3 miles away, don't show
+//                if (cLoc.distanceTo(geoPoint) < defaultDistance) {
+//                    closeVehicles.add(v);
+//                }
+//            }
+//        }
+//
+//        return closeVehicles;
+    }
+
+    /**
+     * Filter Nearby Stops
      *
      * @param stops
      * @return - a list of stops that are within a specified distance to the user
@@ -592,8 +570,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
      */
     boolean stopIsWithinXMiles(Stop s, int x) {
         GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
-//        GeoPoint myLocation = new GeoPoint(mLocation);
-        GeoPoint myLocation = new GeoPoint(34.0205, -118.2856);
+        GeoPoint myLocation = new GeoPoint(mLocation);
+//        GeoPoint myLocation = new GeoPoint(34.0205, -118.2856);
 
         if (stopLocation != null && myLocation != null) {
             if (myLocation.distanceTo(stopLocation) < x) {
@@ -604,6 +582,16 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         } else {
             return true;
         }
+    }
+
+    private void hideVehicleStops() {
+        mStopsOverlay.clearItems();
+        mMap.invalidate();
+    }
+
+    private void hideVehicleRoute() {
+        mMap.getOverlays().remove(mVehiclePath);
+        mMap.invalidate();
     }
 
     /*********

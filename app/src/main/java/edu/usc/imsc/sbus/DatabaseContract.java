@@ -20,9 +20,6 @@ public final class DatabaseContract {
         public static final String COLUMN_NAME_TRIP_ID = "tripId";
         public static final String COLUMN_NAME_ROUTE_LONG_NAME = "routeLongName";
         public static final String COLUMN_NAME_ROUTE_SHORT_NAME = "routeShortName";
-        public static final String COLUMN_NAME_STOP_HEADSIGN = "stopHeadsign";
-
-
     }
 
     //    Inner class that defines Stop table contents
@@ -48,11 +45,11 @@ public final class DatabaseContract {
     public static final String SQL_CREATE_STOP_ENTRIES =
             "CREATE TABLE " + DataStop.TABLE_NAME + " (" +
                     DataStop._ID + " INTEGER PRIMARY KEY," +
-                    DataStop.COLUMN_NAME_STOP_ID + TEXT_TYPE + COMMA_SEP +
+                    DataStop.COLUMN_NAME_STOP_ID + TEXT_TYPE + " unique" + COMMA_SEP +
                     DataStop.COLUMN_NAME_STOP_NAME + TEXT_TYPE + COMMA_SEP +
                     DataStop.COLUMN_NAME_LATITUDE + FLOAT_TYPE + COMMA_SEP +
                     DataStop.COLUMN_NAME_LONGITUDE + FLOAT_TYPE +
-                    " unique)";
+                    ")";
 
     public static final String SQL_CREATE_VEHICLE_ENTRIES =
             "CREATE TABLE " + DataVehicle.TABLE_NAME + " (" +
@@ -62,14 +59,14 @@ public final class DatabaseContract {
                     DataVehicle.COLUMN_NAME_SHAPE_ID + TEXT_TYPE + COMMA_SEP +
                     DataVehicle.COLUMN_NAME_TRIP_ID + TEXT_TYPE + COMMA_SEP +
                     DataVehicle.COLUMN_NAME_ROUTE_LONG_NAME + TEXT_TYPE + COMMA_SEP +
-                    DataVehicle.COLUMN_NAME_ROUTE_SHORT_NAME + TEXT_TYPE + COMMA_SEP +
-                    DataVehicle.COLUMN_NAME_STOP_HEADSIGN + TEXT_TYPE +
-                    " unique)";
+                    DataVehicle.COLUMN_NAME_ROUTE_SHORT_NAME + TEXT_TYPE +
+                    ")";
 
     public static final String SQL_CREATE_CONNECTION_ENTRIES =
             "CREATE TABLE " + DataConnection.TABLE_NAME + " (" +
-                    DataConnection.COLUMN_NAME_STOP_ID + " INTEGER PRIMARY KEY," +
-                    DataConnection.COLUMN_NAME_VEHICLE_ID + " INTEGER PRIMARY KEY," +
+                    DataConnection._ID + " INTEGER PRIMARY KEY," +
+                    DataConnection.COLUMN_NAME_STOP_ID + " INTEGER," +
+                    DataConnection.COLUMN_NAME_VEHICLE_ID + " INTEGER" +
                     " unique)";
 
     public static final String SQL_DELETE_STOP_ENTRIES =

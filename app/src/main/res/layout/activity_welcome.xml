@@ -13,65 +13,32 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="Welcome!"
+        android:text="Welcome to SBus!"
         android:textColor="#33aaff"
         android:textSize="32sp" />
-
-    <TextView
+    
+    <ProgressBar
+        android:id="@+id/progressBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:progressDrawable="@drawable/circular_progress_bar"/>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_bus_stop"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="@string/welcome"
         android:textSize="24sp" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
-        android:layout_weight="3"
-        android:gravity="center"
-        android:text="To get started\nPlease enter your home and work locations" />
-
-    <EditText
-        android:id="@+id/home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:layout_weight="2"
-        android:hint="Home Address"
-        android:textColor="#33aaff" />
-
-    <EditText
-        android:id="@+id/work"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:layout_weight="2"
-        android:hint="Work Address"
-        android:textColor="#33aaff" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="locations are only used to find nearby bus stops" />
-
-    <Button
-        android:id="@+id/start"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:layout_weight="2"
-        android:background="?android:attr/selectableItemBackground"
-        android:textSize="20sp"
-        android:textColor="#33aaff"
-        android:text="Begin Transportation" />
+        android:text="Loading Data. You will soon be able to enjoy the convenience of SBus!"
+        android:textSize="20sp" />
 
 </LinearLayout>

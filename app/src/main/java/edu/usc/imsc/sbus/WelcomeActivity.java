@@ -1,5 +1,6 @@
 package edu.usc.imsc.sbus;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Address;
@@ -12,18 +13,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 
+import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.util.GeoPoint;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
-public class WelcomeActivity extends ActionBarActivity {
-
-    private EditText mHomeLocation;
-    private EditText mWorkLocation;
-    private Button mStart;
+public class WelcomeActivity extends Activity implements DataRequestListener {
 
     private SharedPreferences sp;
 
@@ -34,30 +34,13 @@ public class WelcomeActivity extends ActionBarActivity {
 
         sp = PreferenceManager.getDefaultSharedPreferences(this);
 
-        if (!sp.getBoolean("firstOpen", true)) {
+        if (sp.getBoolean("firstOpen", true) || stopsNeedRefresh()) {
+            sp.edit().putBoolean("firstOpen", false).commit();
+            new StopsRequest(RequestType.Server).getAllStops(this, this);
+        } else {
             startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
             finish();
-        } else {
-            sp.edit().putBoolean("firstOpen", false).commit();
         }
-
-        mHomeLocation = (EditText) findViewById(R.id.home);
-        mWorkLocation = (EditText) findViewById(R.id.work);
-        mStart = (Button) findViewById(R.id.start);
-
-        mStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!mHomeLocation.getText().toString().trim().isEmpty()) {
-                    sp.edit().putString("home", mHomeLocation.getText().toString().trim()).commit();
-                }
-                if (!mWorkLocation.getText().toString().trim().isEmpty()) {
-                    sp.edit().putString("work", mWorkLocation.getText().toString().trim()).commit();
-                }
-                startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
-                finish();
-            }
-        });
     }
 
     @Override
@@ -82,28 +65,29 @@ public class WelcomeActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private GeoPoint getLocationFromAddress(String adr) {
-        Geocoder coder = new Geocoder(this);
-        List<Address> address;
-        GeoPoint p1 = null;
+    public boolean stopsNeedRefresh() {
+        // Call server to check if a refresh is needed
+        return false;
+    }
 
-        try {
-            address = coder.getFromLocationName(adr, 5);
-            if (address == null) {
-                return null;
-            }
-            Address location = address.get(0);
-            location.getLatitude();
-            location.getLongitude();
+    @Override
+    public void CurrentTransitResponse(List<Vehicle> vehicles) {
 
-            p1 = new GeoPoint((int) (location.getLatitude() * 1E6),
-                    (int) (location.getLongitude() * 1E6));
+    }
 
-            return p1;
+    @Override
+    public void VehicleDelayResponse(Vehicle v, float seconds) {
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    }
+
+    @Override
+    public void RoadResponse(Road road, ArrayList<GeoPoint> waypoints, Vehicle v) {
+
+    }
+
+    @Override
+    public void StopsResponse(List<Stop> stops) {
+        startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
+        finish();
     }
 }

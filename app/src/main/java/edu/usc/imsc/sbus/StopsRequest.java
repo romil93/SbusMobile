@@ -1,6 +1,8 @@
 package edu.usc.imsc.sbus;
 
+import android.app.Activity;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteConstraintException;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -23,17 +25,17 @@ import java.util.regex.Pattern;
  */
 public class StopsRequest {
 
-    private static final String API_CALL_ALL_STOPS = "http://2b0521d2.ngrok.io/API/stops";
+    private static final String API_CALL_ALL_STOPS = "http://1d4fc639.ngrok.io/API/stops";
 
     private final RequestType mRequestType;
-    private MainActivity mActivity;
+    private Activity mActivity;
     private DataRequestListener mListener;
 
     public StopsRequest(RequestType rt) {
         mRequestType = rt;
     }
 
-    public void getAllStops(MainActivity activity, DataRequestListener listener) {
+    public void getAllStops(Activity activity, DataRequestListener listener) {
         mActivity = activity;
         mListener = listener;
 
@@ -111,19 +113,28 @@ public class StopsRequest {
 //                        Enter stop data into database
                             Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
 
-                            long stopPrimaryKey = dbh.insertStop(s);
+                            try {
+                                dbh.insertStop(s);
+                            } catch (SQLiteConstraintException e) {
+//                                e.printStackTrace();
+                            }
 //                            Log.d(LOG_TAG, "Primary Key: " + String.valueOf(stopPrimaryKey));
                         } else {
                             Log.d(LOG_TAG, stopData);
                         }
                     }
 
+//                    Close the data stream
                     data.close();
+
+                    Log.d(LOG_TAG, "Task Complete");
 
                 } catch (IOException e) {
                     Log.d(LOG_TAG, "Task Execution Failed");
                     e.printStackTrace();
                 }
+
+                mListener.StopsResponse(null);
             }
 
             return null;
