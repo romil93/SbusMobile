@@ -116,7 +116,7 @@ public class MyOverlay {
 
                 if (vehicle == v) {
                     mOverlay.removeItem(mOverlay.getItem(i));
-                    VehicleOverlayItem newItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, v.getCurrentLocation(), v);
+                    VehicleOverlayItem newItem = new VehicleOverlayItem(v);
                     if (mPreviousSelectedVehicleItem != null) {
                         if (mPreviousSelectedVehicleItem.vehicle == v) {
                             mPreviousSelectedVehicleItem = newItem;

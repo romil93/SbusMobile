@@ -4,70 +4,27 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/material_deep_teal_500"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        />
+
     <org.osmdroid.views.MapView
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@+id/toolbar"
         android:clickable="true" />
-
-    <!--<AutoCompleteTextView-->
-    <!--android:id="@+id/searchText"-->
-    <!--android:layout_width="match_parent"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:background="#aaFFFFFF"-->
-    <!--android:cursorVisible="false"-->
-    <!--android:hint="search for public transit vehicles"-->
-    <!--android:imeOptions="actionSearch"-->
-    <!--android:inputType="textPostalAddress"-->
-    <!--android:minHeight="40dp"-->
-    <!--android:padding="12dp" />-->
-
-    <!--<Button-->
-        <!--android:id="@+id/travel"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_alignParentBottom="true"-->
-        <!--android:layout_centerHorizontal="true"-->
-        <!--android:layout_marginBottom="4dp"-->
-        <!--android:background="@drawable/button_rounded_rectangle"-->
-        <!--android:onClick="onTravelClick"-->
-        <!--android:paddingLeft="30dp"-->
-        <!--android:paddingRight="30dp"-->
-        <!--android:text="TRAVEL"-->
-        <!--android:textColor="#444444" />-->
-
-    <ImageButton
-        android:id="@+id/my_location"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="4dp"
-        android:layout_marginLeft="4dp"
-        android:background="@drawable/button_background"
-        android:onClick="onCurrentLocationClick"
-        android:padding="8dp"
-        android:src="@drawable/ic_action_location_found" />
-
-    <ImageButton
-        android:id="@+id/settings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="4dp"
-        android:layout_marginRight="4dp"
-        android:background="@drawable/button_background"
-        android:onClick="onSettingsClick"
-        android:padding="8dp"
-        android:src="@drawable/ic_action_settings" />
 
     <TextView
         android:id="@+id/text_loading_vehicles"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignTop="@+id/my_location"
         android:background="#eeFFFFFF"
         android:elevation="2dp"
         android:gravity="center"
@@ -86,6 +43,6 @@
         layout="@layout/vehicle_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true" />
+        android:layout_below="@+id/toolbar"/>
 
 </RelativeLayout>

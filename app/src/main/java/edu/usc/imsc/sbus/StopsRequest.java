@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  */
 public class StopsRequest {
 
-    private static final String API_CALL_ALL_STOPS = "http://1d4fc639.ngrok.io/API/stops";
+    private static final String API_CALL_ALL_STOPS = "http://074e9172.ngrok.io/API/stops";
 
     private final RequestType mRequestType;
     private Activity mActivity;

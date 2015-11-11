@@ -29,7 +29,7 @@ import java.util.Locale;
  */
 public class TransitRequest {
 
-    private static final String API_CALL_ALL_TRANSIT = "http://gd2.usc.edu:11570/getCurrentTransit";
+    private static final String API_CALL_ALL_TRANSIT = "http:/0228310c.ngrok.io/getCurrentTransit";
 
     private static final String TAG_ROUTE_ID = "ROUTE_ID";
     private static final String TAG_SERVICE_ID = "SERVICE_ID";

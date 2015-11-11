@@ -10,8 +10,8 @@ public class VehicleOverlayItem extends OverlayItem{
 
     public Vehicle vehicle;
 
-    public VehicleOverlayItem(String aTitle, String aSnippet, IGeoPoint aGeoPoint, Vehicle v) {
-        super(aTitle, aSnippet, aGeoPoint);
+    public VehicleOverlayItem(Vehicle v) {
+        super("Vehicle", v.routeShortName, v.getCurrentLocation());
 
         vehicle = v;
     }

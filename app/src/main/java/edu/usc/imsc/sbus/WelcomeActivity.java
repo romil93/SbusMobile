@@ -8,6 +8,7 @@ import android.location.Geocoder;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -35,9 +36,11 @@ public class WelcomeActivity extends Activity implements DataRequestListener {
         sp = PreferenceManager.getDefaultSharedPreferences(this);
 
         if (sp.getBoolean("firstOpen", true) || stopsNeedRefresh()) {
+            Log.d("Welcome", "First Open");
             sp.edit().putBoolean("firstOpen", false).commit();
             new StopsRequest(RequestType.Server).getAllStops(this, this);
         } else {
+            Log.d("Welcome", "Already Opened");
             startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
             finish();
         }

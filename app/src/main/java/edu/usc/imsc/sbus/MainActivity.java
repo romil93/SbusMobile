@@ -1,15 +1,21 @@
 package edu.usc.imsc.sbus;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
+import android.app.SearchManager;
+import android.content.Context;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.view.MenuItem;
+import android.widget.SearchView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
-import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends Activity implements LocationListener, DataRequestListener, MyOverlay.VehicleClickListener {
+public class MainActivity extends ActionBarActivity implements LocationListener, DataRequestListener, MyOverlay.VehicleClickListener {
 
     private Location mLocation;
 
@@ -42,8 +48,6 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
-    private VehiclesAdapter mAdapter;
-    private AutoCompleteTextView mSearchText;
     private View vehicleInfoBox;
     private TextView vehicleName;
     private TextView stopName;
@@ -70,6 +74,9 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         loadingVehiclesText = (TextView) findViewById(R.id.text_loading_vehicles);
 
         /* Initialize the map */
@@ -82,7 +89,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
         /* Enable Zoom Controls */
 //        mMap.setBuiltInZoomControls(true);
         mMap.setMultiTouchControls(true);
-        mMap.setMinZoomLevel(8);
+        mMap.setMinZoomLevel(12);
 
         /* Set a Default Map Point */
         mMapController = mMap.getController();
@@ -142,7 +149,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
         /* Make sure the user has location turned on */
         mProgressLocation = new ProgressDialog(this);
-        mProgressLocation.setMessage("Searching for location. Please ensure GPS is turned on.");
+        mProgressLocation.setMessage("Searching for location. Please ensure GPS is on.");
         mProgressLocation.setCancelable(false);
 
         if (mLocation == null) {
@@ -151,9 +158,6 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
             GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
             mMapController.setCenter(startPoint);
         }
-
-        /* Start loading the stops, either from server or from sqlite */
-        new StopsRequest(RequestType.Local).getAllStops(this, this);
     }
 
 
@@ -168,6 +172,43 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     protected void onPause() {
         super.onPause();
         mLocationManager.removeUpdates(this);
+    }
+
+    /*
+     * *************************************************************************
+     *                      MENU / APP BAR FUNCTIONS
+     * *************************************************************************
+     */
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+
+        // Associate searchable configuration with the SearchView
+        SearchManager searchManager =
+                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView =
+                (SearchView) menu.findItem(R.id.search).getActionView();
+        searchView.setSearchableInfo(
+                searchManager.getSearchableInfo(getComponentName()));
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.location:
+                if (mLocation != null) {
+                    updateLocation(mLocation);
+                } else {
+                    Toast.makeText(this, "Current Location Not Known", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     /*
@@ -201,7 +242,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
                         stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
                     }
                 } else {
-                    VehicleOverlayItem vehicleItem = new VehicleOverlayItem("Vehicle", v.stopHeadsign, v.getCurrentLocation(), v);
+                    VehicleOverlayItem vehicleItem = new VehicleOverlayItem(v);
                     if (v.hasFocus) {
                         // Update the route
                         displayVehicleRoute(v);
@@ -242,12 +283,15 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
 
     @Override
     public void onLocationChanged(Location location) {
-        // TODO - add a check to trim the vehicles displayed
         mLocation = location;
         if (mProgressLocation.isShowing()) {
+
             mProgressLocation.dismiss();
             GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
             mMapController.setCenter(startPoint);
+
+            /* Start loading the stops, either from server or from sqlite */
+            new StopsRequest(RequestType.Local).getAllStops(this, this);
 
             if (mVehicles != null && !mVehicles.isEmpty()) {
                 mVehicles = filterVehiclesByDistance();
@@ -278,53 +322,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
     private void updateLocation(Location location) {
         GeoPoint geoPoint = new GeoPoint(location);
         mMapController.setCenter(geoPoint);
-        setOverlayLocation(location);
-        mMap.invalidate();
-    }
-
-    /**
-     * Update the "current location" overlay item
-     *
-     * @param location
-     */
-    private void setOverlayLocation(Location location) {
-//        MyLocationNewOverlay locationNewOverlay = new MyLocationNewOverlay(this, mMap);
-//        mMap.getOverlays().add(locationNewOverlay);
         mVehicleOverlay.updateLocationItem(new GeoPoint(location));
-    }
-
-    /*
-     * **************************************************************************
-     *                          Button Click Handlers
-     * **************************************************************************
-     */
-
-    public void onTravelClick(View v) {
-//        search(mSearchText.getText().toString().trim());
-    }
-
-    // SearchClick Helper Function
-    private void search(String content) {
-        if (content.isEmpty()) return;
-
-        Toast.makeText(this, "Searching: " + content, Toast.LENGTH_SHORT).show();
-    }
-
-    /**
-     * The user requests to display their current location on the map
-     *
-     * @param v
-     */
-    public void onCurrentLocationClick(View v) {
-        if (mLocation != null) {
-            updateLocation(mLocation);
-        } else {
-            Toast.makeText(this, "Current Location Not Known", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public void onSettingsClick(View v) {
-        Toast.makeText(this, "Retrieving Info", Toast.LENGTH_SHORT).show();
+        mMap.invalidate();
     }
 
     /*
@@ -346,7 +345,7 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
             MapThread mapThread = new MapThread(this);
             mapThread.start();
 
-            mAdapter = new VehiclesAdapter(this, R.layout.vehicle_search_item, mVehicles);
+//            mAdapter = new VehiclesAdapter(this, R.layout.vehicle_search_item, mVehicles);
 //            mSearchText.setAdapter(mAdapter);
 
         } else {
@@ -570,7 +569,8 @@ public class MainActivity extends Activity implements LocationListener, DataRequ
      */
     boolean stopIsWithinXMiles(Stop s, int x) {
         GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
-        GeoPoint myLocation = new GeoPoint(mLocation);
+        GeoPoint myLocation = null;
+        if (mLocation != null) myLocation = new GeoPoint(mLocation);
 //        GeoPoint myLocation = new GeoPoint(34.0205, -118.2856);
 
         if (stopLocation != null && myLocation != null) {
