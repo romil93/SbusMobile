@@ -6,5 +6,6 @@
     <string name="title_activity_welcome">Welcome</string>
 
     <string name="welcome">This is your personal public transportation assistant</string>
-    <string name="title_activity_search_results">SearchResultsActivity</string>
+    <string name="title_activity_search_results">Search Results</string>
+    <string name="search_hint">Enter A Place</string>
 </resources>

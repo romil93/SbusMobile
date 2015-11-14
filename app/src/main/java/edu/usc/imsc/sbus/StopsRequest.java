@@ -2,17 +2,20 @@ package edu.usc.imsc.sbus;
 
 import android.app.Activity;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteConstraintException;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -25,14 +28,14 @@ import java.util.regex.Pattern;
  */
 public class StopsRequest {
 
-    private static final String API_CALL_ALL_STOPS = "http://074e9172.ngrok.io/API/stops";
-
     private final RequestType mRequestType;
     private Activity mActivity;
     private DataRequestListener mListener;
+    private boolean mProgressUpdate;
 
     public StopsRequest(RequestType rt) {
         mRequestType = rt;
+        mProgressUpdate = false;
     }
 
     public void getAllStops(Activity activity, DataRequestListener listener) {
@@ -72,65 +75,86 @@ public class StopsRequest {
                     } while (cursor.moveToNext());
                 }
 
+                cursor.close();
+
                 mListener.StopsResponse(stops);
 
 //                Server Stops Request
             } else if (mRequestType.equals(RequestType.Server)) {
 
-                Log.d(LOG_TAG, "Task Initiated");
                 DefaultHttpClient client = new DefaultHttpClient();
-                HttpGet httpGet = new HttpGet(API_CALL_ALL_STOPS);
+                HttpGet httpGetCount = new HttpGet(ServerStatics.HOST + ServerStatics.STOPS_COUNT);
 
                 try {
-                    HttpResponse execute = client.execute(httpGet);
-                    Log.d(LOG_TAG, "Task Excuted");
-                    InputStream content = execute.getEntity().getContent();
 
-                    Log.d(LOG_TAG, "Task Retrieved Content");
+                    HttpResponse countExecute = client.execute(httpGetCount);
+                    InputStream countContent = countExecute.getEntity().getContent();
 
-                    DataInputStream data = new DataInputStream(content);
+                    BufferedReader streamReader = new BufferedReader(new InputStreamReader(countContent));
+                    StringBuilder stringBuilder = new StringBuilder();
 
-//                Create database helper to enter data
-                    DatabaseHelper dbh = new DatabaseHelper(mActivity);
+                    String inputStr;
+                    while ((inputStr = streamReader.readLine()) != null)
+                        stringBuilder.append(inputStr);
 
-//                Create pattern for the scanner to search for in the input stream
-                    Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^\\]]+)");
-                    Scanner sc = new Scanner(data);
-                    sc.useDelimiter("\\[");
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                    JSONObject messageObject = jsonObject.getJSONObject("message");
+                    int pageCount = messageObject.getInt("number_of_pages");
 
-                    while (sc.hasNext()) {
-                        String stopData = sc.next();
+                    Log.d(LOG_TAG, "Stops Pages: " + String.valueOf(pageCount));
+                    if (mProgressUpdate) ((WelcomeActivity) mActivity).setProgressMax(pageCount);
 
-                        Matcher matcher = regex.matcher(stopData);
+                    /* For each page of stops, load the stops */
+                    for (int i = 1; i <= pageCount; i++) {
 
-                        if (matcher.find()) {
-                            String stopId = matcher.group(1);
-                            String stopName = matcher.group(2);
-                            String stopLat = matcher.group(3);
-                            String stopLon = matcher.group(4);
+                        Log.d(LOG_TAG, "Reading page " + String.valueOf(i) + " of stops");
 
-//                        Log.d(LOG_TAG, String.format("%-10s%-60s%-20s%-20s", stopId, stopName, stopLat, stopLon));
-//                        Enter stop data into database
-                            Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
+                        HttpGet httpGetStopsPage = new HttpGet(ServerStatics.HOST + ServerStatics.STOPS_PAGE + String.valueOf(i));
+                        HttpResponse execute = client.execute(httpGetStopsPage);
+                        InputStream content = execute.getEntity().getContent();
 
-                            try {
-                                dbh.insertStop(s);
-                            } catch (SQLiteConstraintException e) {
-//                                e.printStackTrace();
-                            }
-//                            Log.d(LOG_TAG, "Primary Key: " + String.valueOf(stopPrimaryKey));
-                        } else {
-                            Log.d(LOG_TAG, stopData);
+                        DataInputStream data = new DataInputStream(content);
+
+                        // Create database helper to enter data
+                        DatabaseHelper dbh = new DatabaseHelper(mActivity);
+
+                        // Create pattern for the scanner to search for in the input stream
+                        Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^\\]]+),\\d+");
+                        Scanner sc = new Scanner(data);
+                        sc.useDelimiter("\\[");
+
+                        if (mProgressUpdate) {
+                            ((WelcomeActivity) mActivity).setProgressCurrent(i);
+                            Log.d(LOG_TAG, "updating progress");
                         }
+
+                        while (sc.hasNext()) {
+                            String stopData = sc.next();
+
+                            Matcher matcher = regex.matcher(stopData);
+
+                            if (matcher.find()) {
+                                String stopId = matcher.group(1);
+                                String stopName = matcher.group(2);
+                                String stopLat = matcher.group(3);
+                                String stopLon = matcher.group(4);
+
+                                // Enter stop data into database
+                                Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
+                                dbh.insertStop(s);
+                            } else {
+                                Log.d(LOG_TAG, "Stop Data: " + stopData);
+                            }
+                        }
+
+                        // Close the data stream
+                        data.close();
                     }
-
-//                    Close the data stream
-                    data.close();
-
-                    Log.d(LOG_TAG, "Task Complete");
 
                 } catch (IOException e) {
                     Log.d(LOG_TAG, "Task Execution Failed");
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
@@ -139,5 +163,10 @@ public class StopsRequest {
 
             return null;
         }
+    }
+
+    public void requestProgressUpdate() {
+        mProgressUpdate = true;
+        Log.d("PROGRESS BAR", "requesting progress update");
     }
 }

@@ -58,8 +58,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE, s.latitude);
         values.put(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE, s.longitude);
 
-//        Insert the new row, returning the primary key value for the new row
-        return db.insert(DatabaseContract.DataStop.TABLE_NAME, "null", values);
+        // Insert the new row, returning the primary key value for the new row
+        long primaryKey = db.insert(DatabaseContract.DataStop.TABLE_NAME, "null", values);
+        db.close();
+
+        return primaryKey;
     }
 
     public long insertVehicle(Vehicle v) {

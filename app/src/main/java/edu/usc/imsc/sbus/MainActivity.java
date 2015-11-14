@@ -61,7 +61,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
-    private final int StopsFilterDistance = 2000; // units in meters
+    private final int StopsFilterDistance = 1000; // units in meters
 
     private List<Vehicle> mVehicles;
 
@@ -90,6 +90,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 //        mMap.setBuiltInZoomControls(true);
         mMap.setMultiTouchControls(true);
         mMap.setMinZoomLevel(12);
+        mMap.setMaxZoomLevel(17);
 
         /* Set a Default Map Point */
         mMapController = mMap.getController();
@@ -166,6 +167,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         super.onResume();
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
         mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+
+        if (getIntent().hasExtra("lat")) {
+            Log.d("Main", "lat");
+        } else {
+            Log.d("Main", "Resume");
+        }
     }
 
     @Override
@@ -186,12 +193,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         inflater.inflate(R.menu.menu_main, menu);
 
         // Associate searchable configuration with the SearchView
-        SearchManager searchManager =
-                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView =
-                (SearchView) menu.findItem(R.id.search).getActionView();
-        searchView.setSearchableInfo(
-                searchManager.getSearchableInfo(getComponentName()));
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
         return true;
     }

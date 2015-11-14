@@ -3,23 +3,17 @@ package edu.usc.imsc.sbus;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Address;
-import android.location.Geocoder;
+import android.graphics.Color;
 import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ProgressBar;
 
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.util.GeoPoint;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,18 +21,23 @@ import java.util.List;
 public class WelcomeActivity extends Activity implements DataRequestListener {
 
     private SharedPreferences sp;
+    private ProgressBar mProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
+        mProgress = (ProgressBar) findViewById(R.id.progressBar);
+
         sp = PreferenceManager.getDefaultSharedPreferences(this);
 
         if (sp.getBoolean("firstOpen", true) || stopsNeedRefresh()) {
             Log.d("Welcome", "First Open");
             sp.edit().putBoolean("firstOpen", false).commit();
-            new StopsRequest(RequestType.Server).getAllStops(this, this);
+            StopsRequest sr = new StopsRequest(RequestType.Server);
+            sr.requestProgressUpdate();
+            sr.getAllStops(this, this);
         } else {
             Log.d("Welcome", "Already Opened");
             startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
@@ -92,5 +91,14 @@ public class WelcomeActivity extends Activity implements DataRequestListener {
     public void StopsResponse(List<Stop> stops) {
         startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
         finish();
+    }
+
+    public void setProgressMax(int max) {
+        mProgress.setMax(max);
+    }
+
+    public void setProgressCurrent(int current) {
+        mProgress.setProgress(current);
+        Log.d("PROGRESS BAR", "updating progress to " + String.valueOf(current));
     }
 }
