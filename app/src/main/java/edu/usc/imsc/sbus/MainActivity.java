@@ -131,23 +131,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         selectedStopName = (TextView) findViewById(R.id.selected_stop_name);
         selectedStopTime = (TextView) findViewById(R.id.selected_stop_time);
 
-//        mSearchText = (AutoCompleteTextView) findViewById(R.id.searchText);
-//
-//        mSearchText.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                Vehicle v = mVehicles.get(position);
-//
-//                VehicleInfoDialog dialog = new VehicleInfoDialog();
-//                dialog.setVehicle(v);
-//                dialog.show(getFragmentManager(), "Vehicle Searched Dialog");
-//            }
-//        });
-
-        /* Load the vehicles asynchronously */
-//        createTaskGetCurrentVehicles();
-
-
         /* Make sure the user has location turned on */
         mProgressLocation = new ProgressDialog(this);
         mProgressLocation.setMessage("Searching for location. Please ensure GPS is on.");
@@ -338,12 +321,14 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void CurrentTransitResponse(List<Vehicle> vehicles) {
+        Log.d("Main Activity", "Current Transit Response - Begin");
         mVehicles = vehicles;
         if (mVehicles != null && !mVehicles.isEmpty()) {
 
+            Log.d("Main Activity", String.valueOf(mVehicles.size()) + " vehicles");
 
-            if (mLocation != null)
-                mVehicles = filterVehiclesByDistance();
+//            if (mLocation != null)
+//                mVehicles = filterVehiclesByDistance();
 
             // This will update the busses every 5 seconds
             MapThread mapThread = new MapThread(this);
@@ -498,6 +483,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             selectedStopName.setText("Stop Name");
             selectedStopTime.setText("Arrival Time");
         }
+        new TransitRequest().getStopTransit(this, this, s.id);
 
         mMap.invalidate();
     }

@@ -1,6 +1,5 @@
 package edu.usc.imsc.sbus;
 
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.util.JsonReader;
 import android.util.JsonToken;
@@ -9,11 +8,15 @@ import android.util.Log;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,8 +31,6 @@ import java.util.Locale;
  * Copyright (c) Cantwell Code 2015. All Rights Reserved
  */
 public class TransitRequest {
-
-    private static final String API_CALL_ALL_TRANSIT = "http:/0228310c.ngrok.io/getCurrentTransit";
 
     private static final String TAG_ROUTE_ID = "ROUTE_ID";
     private static final String TAG_SERVICE_ID = "SERVICE_ID";
@@ -49,95 +50,84 @@ public class TransitRequest {
 
     private MainActivity mActivity;
     private DataRequestListener mListener;
-    private RequestType mRequestType;
 
-    public void TransitRequest(RequestType rt) {
-        mRequestType = rt;
+    private String mStopId;
+
+    public TransitRequest() {
     }
 
-    public void getAllTransit(MainActivity activity, DataRequestListener listener) {
+    public void getStopTransit(MainActivity activity, DataRequestListener listener, String stopId) {
         mActivity = activity;
         mListener = listener;
+        mStopId = stopId;
 
-        GetAllTransit task = new GetAllTransit();
+        GetStopTransit task = new GetStopTransit();
         task.execute();
     }
 
-    /**
-     * *************************************************************************
-     * GET CURRENT TRANSIT                             *
-     * AJAX call to the API                                                    *
-     * Queries for all of the vehicles, and adds them to my list of vehicles   *
-     * **************************************************************************
-     */
+    private class GetStopTransit extends AsyncTask<Void, Void, Void> {
 
-    private class GetAllTransit extends AsyncTask<Void, Void, Void> {
-
-        private final String LOG_TAG = "GetAllTransit";
+        private final String LOG_TAG = "GetStopTransit";
 
         private List<Vehicle> mVehicles;
 
         @Override
         protected Void doInBackground(Void... params) {
 
-            // Local Request
-            if (mRequestType.equals(RequestType.Local)) {
-//                DatabaseHelper dbh = new DatabaseHelper(mActivity);
-//                Cursor cursor = dbh.retrieveAllTransit();
-//                List<Vehicle> vehicles = new ArrayList<>();
-//
-//                if (cursor.moveToFirst()) {
-//                    do {
-//                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
-//                        String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-//                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
-//                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
-//
-//                        vehicles.add(new Vehicle(id, name, lat, lon));
-//                    } while (cursor.moveToNext());
-//                }
-//
-//                mListener.StopsResponse(stops);
+            mVehicles = new ArrayList<>();
 
-            // Server Request
-            } else {
-                DefaultHttpClient client = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(API_CALL_ALL_TRANSIT);
-
-                // DateTime used for parameters
-                Calendar c = Calendar.getInstance();
-
-                /* Used for date parameter */
-                String year = String.valueOf(c.get(Calendar.YEAR));
-                String month = String.format("%02d", c.get(Calendar.MONTH) + 1);
-                String day = String.format("%02d", c.get(Calendar.DAY_OF_MONTH));
+            // DateTime used for parameters
+            Calendar c = Calendar.getInstance();
 
                 /* Used for time parameter */
-                SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-                String time = timeFormat.format(c.getTime());
+            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+            String time = timeFormat.format(c.getTime());
 
                 /* Used for weekday parameter */
-                SimpleDateFormat dayFormat = new SimpleDateFormat("EEEE", Locale.US);
-                String weekday = dayFormat.format(c.getTime()).toLowerCase();
+            SimpleDateFormat dayFormat = new SimpleDateFormat("EEEE", Locale.US);
+            String weekday = dayFormat.format(c.getTime()).toLowerCase();
 
-                // Add parameters to the post request
-                List<NameValuePair> paramList = new ArrayList<>(3);
-                paramList.add(new BasicNameValuePair("date", year + month + day));  // e.g. 20150324
-                paramList.add(new BasicNameValuePair("time", time));                // e.g. 09:34:57
-                paramList.add(new BasicNameValuePair("weekday", weekday));          // e.g. tuesday
+            DefaultHttpClient client = new DefaultHttpClient();
+            HttpGet httpGet = new HttpGet(ServerStatics.CreateStopTransitEndpoint(mStopId, time, weekday));
 
-                try {
-                    httpPost.setEntity(new UrlEncodedFormEntity(paramList, HTTP.UTF_8));
+            try {
 
-                    HttpResponse execute = client.execute(httpPost);
-                    InputStream content = execute.getEntity().getContent();
+                HttpResponse execute = client.execute(httpGet);
+                InputStream content = execute.getEntity().getContent();
 
-                    mVehicles = readCurrentTransitJsonArray(content);
+                BufferedReader streamReader = new BufferedReader(new InputStreamReader(content));
+                StringBuilder stringBuilder = new StringBuilder();
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Log.d("POST", e.getMessage());
+                String inputStr;
+                while ((inputStr = streamReader.readLine()) != null)
+                    stringBuilder.append(inputStr);
+
+                JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                JSONArray vehicleArray = jsonObject.getJSONArray("message");
+
+                Log.d(LOG_TAG, jsonObject.toString());
+
+                for (int i = 0; i < vehicleArray.length(); i++) {
+                    JSONArray j = new JSONArray(vehicleArray.getString(i));
+                    Vehicle v = new Vehicle();
+                    if (!j.isNull(0)) v.tripId = j.getString(0);
+                    if (!j.isNull(1)) v.arrivalTime = j.getString(1);
+                    if (!j.isNull(3)) v.stopHeadsign = j.getString(3);
+                    if (!j.isNull(8)) v.routeId = j.getString(8);
+                    if (!j.isNull(9)) v.shapeId = j.getString(9);
+                    if (!j.isNull(10)) v.routeShortName = j.getString(10);
+                    if (!j.isNull(11)) v.routeLongName = j.getString(11);
+                    if (!j.isNull(12)) v.routeLongName = j.getString(12);
+                    Log.d(LOG_TAG, vehicleArray.getString(i));
+
+                    mVehicles.add(v);
                 }
+
+                Log.d(LOG_TAG, "DONE");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.d("POST", e.getMessage());
             }
 
             return null;
@@ -152,18 +142,12 @@ public class TransitRequest {
     }
 
 
-    private List<Vehicle> readCurrentTransitJsonArray(InputStream in) throws IOException {
-        List<Vehicle> vehicles;
-
-        JsonReader jsonReader = new JsonReader(new InputStreamReader(in));
-        try {
-            vehicles = readVehicleArray(jsonReader);
-        } finally {
-            jsonReader.close();
-        }
-
-        return vehicles;
-    }
+    /*
+     * *****************************************************************************************
+     *                          Parsing for the
+     *                          Transit Response
+     ******************************************************************************************
+     */
 
     private List<Vehicle> readVehicleArray(JsonReader reader) throws IOException {
         List<Vehicle> vehicles = new ArrayList();

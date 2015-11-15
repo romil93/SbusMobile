@@ -58,7 +58,7 @@ public class StopsRequest {
         @Override
         protected Void doInBackground(Void... params) {
 
-//            Local Stops Request
+            // Local Stops Request
             if (mRequestType.equals(RequestType.Local)) {
                 DatabaseHelper dbh = new DatabaseHelper(mActivity);
                 Cursor cursor = dbh.retrieveAllStops();
@@ -79,7 +79,7 @@ public class StopsRequest {
 
                 mListener.StopsResponse(stops);
 
-//                Server Stops Request
+                // Server Stops Request
             } else if (mRequestType.equals(RequestType.Server)) {
 
                 DefaultHttpClient client = new DefaultHttpClient();

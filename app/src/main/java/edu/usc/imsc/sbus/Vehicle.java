@@ -28,6 +28,9 @@ public class Vehicle {
     String routeShortName;
     String stopHeadsign;
 
+    String arrivalTime;
+    String routeColor;
+
     List<Stop> stops;
 
     int currentLocationIndex;
@@ -39,6 +42,16 @@ public class Vehicle {
         currentLocationIndex = 0;
         prevStop = 0;
         nextStop = 0;
+
+        tripId = null;
+        arrivalTime = null;
+        stopHeadsign = null;
+        routeId = null;
+        serviceId = null;
+        shapeId = null;
+        routeShortName = null;
+        routeLongName = null;
+        routeColor = null;
     }
 
     public int determineCurrentLocationIndex() {
@@ -65,6 +78,8 @@ public class Vehicle {
     }
 
     public GeoPoint getCurrentLocation() {
+
+        determineCurrentLocationIndex();
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         String time = timeFormat.format(Calendar.getInstance().getTime());

@@ -67,23 +67,6 @@ public class MyOverlay {
                 }, resourceProxy);
     }
 
-    /*
-            Handle a vehicle click
-     */
-    private boolean onSingleTapUpHelper(int index, OverlayItem item) {
-        if (item instanceof VehicleOverlayItem) {
-            Vehicle v = ((VehicleOverlayItem) item).vehicle;
-            handleVehicleClick(v, item);
-        } else if (item instanceof StopOverlayItem) {
-            Stop s = ((StopOverlayItem) item).stop;
-            handleStopClick(s, item);
-        } else {
-            handleEmptyClick();
-        }
-
-        return true;
-    }
-
     // Add an individual item to the overlay
     public void addItem(OverlayItem item) {
         mOverlay.addItem(item);
@@ -98,6 +81,14 @@ public class MyOverlay {
     public void clearItems() {
         mOverlay.removeAllItems();
     }
+
+    public ItemizedIconOverlay<OverlayItem> getOverlay() {
+        return mOverlay;
+    }
+
+    /*******************************************************************************************
+     *                      Overlay Item Updating
+     *******************************************************************************************/
 
     // Set/Update the item that shows the user's current location
     public void updateLocationItem(GeoPoint geoPoint) {
@@ -171,8 +162,23 @@ public class MyOverlay {
         }
     }
 
-    public ItemizedIconOverlay<OverlayItem> getOverlay() {
-        return mOverlay;
+
+    /*******************************************************************************************
+     *                      Overlay Item Click Handling
+     *******************************************************************************************/
+
+    private boolean onSingleTapUpHelper(int index, OverlayItem item) {
+        if (item instanceof VehicleOverlayItem) {
+            Vehicle v = ((VehicleOverlayItem) item).vehicle;
+            handleVehicleClick(v, item);
+        } else if (item instanceof StopOverlayItem) {
+            Stop s = ((StopOverlayItem) item).stop;
+            handleStopClick(s, item);
+        } else {
+            handleEmptyClick();
+        }
+
+        return true;
     }
 
     private void handleVehicleClick(Vehicle v, OverlayItem item) {
