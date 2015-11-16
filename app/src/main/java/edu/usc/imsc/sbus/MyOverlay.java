@@ -142,9 +142,9 @@ public class MyOverlay {
                         }
                     }
                     if (s.hasFocus) {
-                        stopMarker.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop_selected));
+                        stopMarker.setMarker(mContext.getResources().getDrawable(StopOverlayItem.focusedIconId));
                     } else {
-                        stopMarker.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop));
+                        stopMarker.setMarker(mContext.getResources().getDrawable(StopOverlayItem.iconId));
                     }
                     mOverlay.addItem(stopMarker);
                     return true;
@@ -227,13 +227,13 @@ public class MyOverlay {
                 Log.d("onStopClick", "Same item as previous click");
                 // If this stop was the last stop to be selected
                 s.hasFocus = false;
-                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop));
+                item.setMarker(mContext.getResources().getDrawable(StopOverlayItem.iconId));
                 mPreviousSelectedStopItem = null;
             } else {
                 Log.d("onStopClick", "Different item clicked");
                 // If there was another stop previously selected
-                mPreviousSelectedStopItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop));
-                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop_selected));
+                mPreviousSelectedStopItem.setMarker(mContext.getResources().getDrawable(StopOverlayItem.iconId));
+                item.setMarker(mContext.getResources().getDrawable(StopOverlayItem.focusedIconId));
 
                 mPreviousSelectedStopItem.stop.hasFocus = false;
                 s.hasFocus = true;
@@ -244,7 +244,7 @@ public class MyOverlay {
             Log.d("onStopClick", "First item click");
             // If this is the first time a stop has been selected
             s.hasFocus = true;
-            item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_stop_selected));
+            item.setMarker(mContext.getResources().getDrawable(StopOverlayItem.focusedIconId));
 
             mPreviousSelectedStopItem = (StopOverlayItem) item;
         }

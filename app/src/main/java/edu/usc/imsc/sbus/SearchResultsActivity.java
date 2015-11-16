@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.JsonReader;
@@ -38,6 +40,8 @@ public class SearchResultsActivity extends ActionBarActivity {
     private ListView mListView;
     private PlacesAdapter mAdapter;
 
+    private SharedPreferences sp;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,14 +53,16 @@ public class SearchResultsActivity extends ActionBarActivity {
         setSupportActionBar(toolbar);
         handleIntent(getIntent());
 
+        sp = PreferenceManager.getDefaultSharedPreferences(this);
+
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Place p = mAdapter.getItem(position);
-                Intent intent = new Intent();
-                intent.putExtra("lat", p.lat);
-                intent.putExtra("lon", p.lon);
-                setResult(Activity.RESULT_OK, intent);
+
+                sp.edit().putFloat("searchLatitude", (float) p.lat).commit();
+                sp.edit().putFloat("searchLongitude", (float) p.lon).commit();
+
                 finish();
             }
         });

@@ -3,11 +3,13 @@ package edu.usc.imsc.sbus;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.MenuItem;
 import android.widget.SearchView;
@@ -62,9 +64,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
     private final int StopsFilterDistance = 1000; // units in meters
+    private GeoPoint mFilterLocation = null;
 
     private List<Vehicle> mVehicles;
-
+    private SharedPreferences mSharedPreferences;
     private ProgressDialog mProgressLocation;
 
     private int mFocusedVehicleLastIndex = 0;
@@ -76,6 +79,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         loadingVehiclesText = (TextView) findViewById(R.id.text_loading_vehicles);
 
@@ -101,7 +105,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_blue), this);
         mMap.getOverlays().add(mVehicleOverlay.getOverlay());
         // Create and add a Stops Overlay
-        mStopsOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_stop), this);
+        mStopsOverlay = new MyOverlay(this, getResources().getDrawable(StopOverlayItem.iconId), this);
         mMap.getOverlays().add(mStopsOverlay.getOverlay());
         // Create and add a road manager
         mRoadManager = new OSRMRoadManager();
@@ -151,10 +155,15 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
         mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
 
-        if (getIntent().hasExtra("lat")) {
-            Log.d("Main", "lat");
-        } else {
-            Log.d("Main", "Resume");
+        if (mSharedPreferences.contains("searchLatitude") && mSharedPreferences.contains("searchLongitude")) {
+            float lat = mSharedPreferences.getFloat("searchLatitude", 0);
+            float lon = mSharedPreferences.getFloat("searchLongitude", 0);
+            mFilterLocation = new GeoPoint(lat, lon);
+            mSharedPreferences.edit().remove("searchLatitude").commit();
+            mSharedPreferences.edit().remove("searchLongitude").commit();
+
+            new StopsRequest(RequestType.Local).getAllStops(this, this);
+            mMapController.setCenter(new GeoPoint(lat, lon));
         }
     }
 
@@ -419,7 +428,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     @Override
     public void StopsResponse(List<Stop> stops) {
         // filter stops based on location
-        List<Stop> nearbyStops = filterNearbyStops(stops);
+        GeoPoint g = (mFilterLocation != null) ? mFilterLocation : new GeoPoint(mLocation);
+        List<Stop> nearbyStops = filterNearbyStops(stops, g);
 
         // create overlay items
         List<OverlayItem> stopOverlayItems = new ArrayList<>();
@@ -541,10 +551,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
      * @param stops
      * @return - a list of stops that are within a specified distance to the user
      */
-    List<Stop> filterNearbyStops(List<Stop> stops) {
+    List<Stop> filterNearbyStops(List<Stop> stops, GeoPoint g) {
         List<Stop> nearbyStops = new ArrayList<>();
         for (Stop s : stops) {
-            if (stopIsWithinXMiles(s, StopsFilterDistance)) {
+            if (stopIsWithinXMiles(s, StopsFilterDistance, g)) {
                 nearbyStops.add(s);
             }
         }
@@ -557,14 +567,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
      * @return - true/false if the distance to the stop is within the range of x
      * If the stop location or user location is null, this returns true
      */
-    boolean stopIsWithinXMiles(Stop s, int x) {
+    boolean stopIsWithinXMiles(Stop s, int x, GeoPoint g) {
         GeoPoint stopLocation = new GeoPoint(s.latitude, s.longitude);
-        GeoPoint myLocation = null;
-        if (mLocation != null) myLocation = new GeoPoint(mLocation);
-//        GeoPoint myLocation = new GeoPoint(34.0205, -118.2856);
 
-        if (stopLocation != null && myLocation != null) {
-            if (myLocation.distanceTo(stopLocation) < x) {
+        if (stopLocation != null && g != null) {
+            if (g.distanceTo(stopLocation) < x) {
                 return true;
             } else {
                 return false;
