@@ -9,6 +9,8 @@ import org.osmdroid.views.overlay.OverlayItem;
 public class VehicleOverlayItem extends OverlayItem{
 
     public Vehicle vehicle;
+    public static final int iconId = R.drawable.ic_bus2;
+    public static final int focusedIconId = R.drawable.ic_bus3;
 
     public VehicleOverlayItem(Vehicle v) {
         super("Vehicle", v.routeShortName, v.getCurrentLocation());

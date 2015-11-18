@@ -19,6 +19,8 @@ public class Stop {
     }
 
     public String id;
+    public String stopHeadsign;
+    public int stopSequence;
     public String name;
     public double latitude;
     public double longitude;

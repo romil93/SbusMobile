@@ -16,7 +16,7 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_bus_blue" />
+            android:src="@drawable/ic_stop1" />
 
         <TextView
             android:id="@+id/selected_stop_name"

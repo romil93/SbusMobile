@@ -28,25 +28,17 @@ import java.util.List;
 
 public class MyOverlay {
 
-    public interface VehicleClickListener {
-        void onVehicleClick(Vehicle v);
-
-        void onStopClick(Stop s);
-
-        void onEmptyClick();
-    }
-
     private ItemizedIconOverlay<OverlayItem> mOverlay;
     private MainActivity mContext;
 
-    private VehicleClickListener mListener;
+    private MapClickListener mListener;
 
     // Specific overlay item for displaying the user's current location
     private OverlayItem mCurrentLocationItem;
     private VehicleOverlayItem mPreviousSelectedVehicleItem;
     private StopOverlayItem mPreviousSelectedStopItem;
 
-    public MyOverlay(MainActivity context, Drawable marker, VehicleClickListener listener) {
+    public MyOverlay(MainActivity context, Drawable marker, MapClickListener listener) {
         mContext = context;
         mListener = listener;
         ArrayList<OverlayItem> items = new ArrayList<>();
@@ -87,7 +79,7 @@ public class MyOverlay {
     }
 
     /*******************************************************************************************
-     *                      Overlay Item Updating
+     * Overlay Item Updating
      *******************************************************************************************/
 
     // Set/Update the item that shows the user's current location
@@ -95,12 +87,13 @@ public class MyOverlay {
 
         mOverlay.removeItem(mCurrentLocationItem);
         mCurrentLocationItem = new OverlayItem("My Location", "My Current Location", geoPoint);
-        mCurrentLocationItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_action_location_found));
+        mCurrentLocationItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_maps_place));
         mOverlay.addItem(mCurrentLocationItem);
     }
 
     public boolean updateVehicle(Vehicle vehicle) {
 
+        /* Check each overlay item, and update the desired vehicle */
         for (int i = 0; i < mOverlay.size(); i++) {
             if (mOverlay.getItem(i) instanceof VehicleOverlayItem) {
                 Vehicle v = ((VehicleOverlayItem) mOverlay.getItem(i)).vehicle;
@@ -114,9 +107,9 @@ public class MyOverlay {
                         }
                     }
                     if (v.hasFocus) {
-                        newItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+                        newItem.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.focusedIconId));
                     } else {
-                        newItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
+                        newItem.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.iconId));
                     }
                     mOverlay.addItem(newItem);
                     return true;
@@ -164,7 +157,7 @@ public class MyOverlay {
 
 
     /*******************************************************************************************
-     *                      Overlay Item Click Handling
+     * Overlay Item Click Handling
      *******************************************************************************************/
 
     private boolean onSingleTapUpHelper(int index, OverlayItem item) {
@@ -186,12 +179,12 @@ public class MyOverlay {
             if (mPreviousSelectedVehicleItem == item) {
                 // If this vehicle was the last vehicle to be selected
                 v.hasFocus = false;
-                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
+                item.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.iconId));
                 mPreviousSelectedVehicleItem = null;
             } else {
                 // If there was another vehicle previously selected
-                mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_blue));
-                item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+                mPreviousSelectedVehicleItem.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.iconId));
+                item.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.focusedIconId));
 
                 mPreviousSelectedVehicleItem.vehicle.hasFocus = false;
                 v.hasFocus = true;
@@ -201,7 +194,7 @@ public class MyOverlay {
         } else {
             // If this is the first time a vehicle has been selected
             v.hasFocus = true;
-            item.setMarker(mContext.getResources().getDrawable(R.drawable.ic_bus_green));
+            item.setMarker(mContext.getResources().getDrawable(VehicleOverlayItem.focusedIconId));
 
             mPreviousSelectedVehicleItem = (VehicleOverlayItem) item;
         }

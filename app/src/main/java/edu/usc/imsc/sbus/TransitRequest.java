@@ -108,16 +108,35 @@ public class TransitRequest {
                 Log.d(LOG_TAG, jsonObject.toString());
 
                 for (int i = 0; i < vehicleArray.length(); i++) {
-                    JSONArray j = new JSONArray(vehicleArray.getString(i));
+                    JSONArray jVehicle = new JSONArray(vehicleArray.getString(i));
                     Vehicle v = new Vehicle();
-                    if (!j.isNull(0)) v.tripId = j.getString(0);
-                    if (!j.isNull(1)) v.arrivalTime = j.getString(1);
-                    if (!j.isNull(3)) v.stopHeadsign = j.getString(3);
-                    if (!j.isNull(8)) v.routeId = j.getString(8);
-                    if (!j.isNull(9)) v.shapeId = j.getString(9);
-                    if (!j.isNull(10)) v.routeShortName = j.getString(10);
-                    if (!j.isNull(11)) v.routeLongName = j.getString(11);
-                    if (!j.isNull(12)) v.routeLongName = j.getString(12);
+                    if (!jVehicle.isNull(0)) v.tripId         = jVehicle.getString(0);
+                    if (!jVehicle.isNull(1)) v.routeId        = jVehicle.getString(1);
+                    if (!jVehicle.isNull(2)) v.serviceId      = jVehicle.getString(2);
+                    if (!jVehicle.isNull(3)) v.shapeId        = jVehicle.getString(3);
+                    if (!jVehicle.isNull(4)) v.routeShortName = jVehicle.getString(4);
+                    if (!jVehicle.isNull(5)) v.routeLongName  = jVehicle.getString(5);
+                    if (!jVehicle.isNull(6)) v.routeColor     = jVehicle.getString(6);
+                    if (!jVehicle.isNull(7)) {
+                        // Read the stops array
+                        JSONArray stopsArray = new JSONArray(jVehicle.getString(7)); // sa = stops array
+//                        Log.d("Stops Array", stopsArray.toString());
+                        List<Stop> stops = new ArrayList<>();
+                        for (int j = 0; j < stopsArray.length(); j++) {
+                            JSONArray jStop = new JSONArray(stopsArray.getString(j));
+//                            Log.d("Stop", jStop.toString());
+                            Stop s = new Stop();
+                            if (!jStop.isNull(0)) s.id           = jStop.getString(0);
+                            if (!jStop.isNull(1)) s.stopHeadsign = jStop.getString(1);
+                            if (!jStop.isNull(2)) s.stopSequence = jStop.getInt(2);
+                            if (!jStop.isNull(3)) s.name         = jStop.getString(3);
+                            if (!jStop.isNull(4)) s.latitude     = jStop.getDouble(4);
+                            if (!jStop.isNull(5)) s.longitude    = jStop.getDouble(5);
+                            if (!jStop.isNull(6)) s.arrivalTime  = jStop.getString(6);
+                            stops.add(s);
+                        }
+                        v.stops = stops;
+                    }
                     Log.d(LOG_TAG, vehicleArray.getString(i));
 
                     mVehicles.add(v);

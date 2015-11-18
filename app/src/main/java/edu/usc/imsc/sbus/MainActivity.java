@@ -1,8 +1,10 @@
 package edu.usc.imsc.sbus;
 
+import android.app.DialogFragment;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
@@ -37,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends ActionBarActivity implements LocationListener, DataRequestListener, MyOverlay.VehicleClickListener {
+public class MainActivity extends ActionBarActivity implements LocationListener, DataRequestListener, MapClickListener {
 
     private Location mLocation;
 
@@ -63,7 +65,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
-    private final int StopsFilterDistance = 1000; // units in meters
+    private int mStopsFilterDistance; // units in meters
     private GeoPoint mFilterLocation = null;
 
     private List<Vehicle> mVehicles;
@@ -80,6 +82,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        mStopsFilterDistance = mSharedPreferences.getInt("stopRange", 1000);
 
         loadingVehiclesText = (TextView) findViewById(R.id.text_loading_vehicles);
 
@@ -102,7 +106,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mMapController.setCenter(new GeoPoint(34.0205, -118.2856));
 
         // Create and add Vehicle Overlay
-        mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(R.drawable.ic_bus_blue), this);
+        mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(VehicleOverlayItem.iconId), this);
         mMap.getOverlays().add(mVehicleOverlay.getOverlay());
         // Create and add a Stops Overlay
         mStopsOverlay = new MyOverlay(this, getResources().getDrawable(StopOverlayItem.iconId), this);
@@ -202,6 +206,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                     Toast.makeText(this, "Current Location Not Known", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+//            case R.id.settings:
+//                Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show();
+//                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -221,7 +228,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         findViewById(R.id.text_loading_vehicles).setVisibility(View.GONE);
         for (Vehicle v : mVehicles) {
 
+//            Log.d("Main Activity", "Searching for a location");
             if (v.getCurrentLocation() != null) {
+                Log.d("Main Activity", "Found vehicle location");
 
                 if (mVehicleOverlay.updateVehicle(v)) {
                     if (v.hasFocus) {
@@ -243,7 +252,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                         // Update the route
                         displayVehicleRoute(v);
                         // Set the marker to vehicle selected
-                        vehicleItem.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+                        vehicleItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
                         // Update the info box
                         vehicleName.setText(v.stopHeadsign);
                         stopName.setText(v.stops.get(v.nextStop).name);
@@ -288,10 +297,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
             /* Start loading the stops, either from server or from sqlite */
             new StopsRequest(RequestType.Local).getAllStops(this, this);
-
-            if (mVehicles != null && !mVehicles.isEmpty()) {
-                mVehicles = filterVehiclesByDistance();
-            }
         }
     }
 
@@ -335,9 +340,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         if (mVehicles != null && !mVehicles.isEmpty()) {
 
             Log.d("Main Activity", String.valueOf(mVehicles.size()) + " vehicles");
-
-//            if (mLocation != null)
-//                mVehicles = filterVehiclesByDistance();
 
             // This will update the busses every 5 seconds
             MapThread mapThread = new MapThread(this);
@@ -408,7 +410,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                 } else {
                     StopOverlayItem stopMarker = new StopOverlayItem(s);
                     if (s.hasFocus) {
-                        stopMarker.setMarker(getResources().getDrawable(R.drawable.ic_bus_green));
+                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
                         selectedStopName.setText(s.name);
                         selectedStopTime.setText(s.arrivalTime);
                     }
@@ -457,7 +459,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     @Override
     public void onVehicleClick(Vehicle v) {
         hideVehicleRoute();
-        hideVehicleStops();
+//        hideVehicleStops();
         stopInfoBox.setVisibility(View.GONE);
         if (v.hasFocus) {
 //            PostRequest post = new PostRequest();
@@ -554,7 +556,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     List<Stop> filterNearbyStops(List<Stop> stops, GeoPoint g) {
         List<Stop> nearbyStops = new ArrayList<>();
         for (Stop s : stops) {
-            if (stopIsWithinXMiles(s, StopsFilterDistance, g)) {
+            if (stopIsWithinXMiles(s, mStopsFilterDistance, g)) {
                 nearbyStops.add(s);
             }
         }

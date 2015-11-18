@@ -2,9 +2,6 @@ package edu.usc.imsc.sbus;
 
 import android.util.Log;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
 import java.text.SimpleDateFormat;
@@ -74,12 +71,16 @@ public class Vehicle {
         if (i == 0 || i == stops.size()) return 0;
 
         currentLocationIndex = i - 1;
+
+        stopHeadsign = stops.get(i).stopHeadsign;
+
         return currentLocationIndex;
     }
 
     public GeoPoint getCurrentLocation() {
 
         determineCurrentLocationIndex();
+//        Log.d("Vehicle", "Location Index: " + currentLocationIndex);
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         String time = timeFormat.format(Calendar.getInstance().getTime());
@@ -108,11 +109,11 @@ public class Vehicle {
 
         int hourDif_NextPrev    = Integer.parseInt(nextTime.substring(0, 2)) - Integer.parseInt(preTime.substring(0, 2));
         int minuteDif_NextPrev  = Integer.parseInt(nextTime.substring(3, 5)) - Integer.parseInt(preTime.substring(3, 5));
-        float timeDif_NextPrev    = (hourDif_NextPrev * 60 + minuteDif_NextPrev) * 60 - 10;
+        float timeDif_NextPrev  = (hourDif_NextPrev * 60 + minuteDif_NextPrev) * 60 - 10;
 
         int hourDif_NextCurrent    = Integer.parseInt(nextTime.substring(0, 2)) - Integer.parseInt(time.substring(0, 2));
         int minuteDif_NextCurrent  = Integer.parseInt(nextTime.substring(3, 5)) - Integer.parseInt(time.substring(3, 5));
-        float timeDif_NextCurrent    = (hourDif_NextCurrent * 60 + minuteDif_NextCurrent) * 60 - Integer.parseInt(time.substring(6, 8));
+        float timeDif_NextCurrent  = (hourDif_NextCurrent * 60 + minuteDif_NextCurrent) * 60 - Integer.parseInt(time.substring(6, 8));
 
         float fractionTime = timeDif_NextPrev != 0 ? timeDif_NextCurrent / timeDif_NextPrev : 0;
 
