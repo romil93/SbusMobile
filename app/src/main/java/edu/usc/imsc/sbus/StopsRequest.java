@@ -101,13 +101,13 @@ public class StopsRequest {
                     JSONObject messageObject = jsonObject.getJSONObject("message");
                     int pageCount = messageObject.getInt("number_of_pages");
 
-                    Log.d(LOG_TAG, "Stops Pages: " + String.valueOf(pageCount));
+//                    Log.d(LOG_TAG, "Stops Pages: " + String.valueOf(pageCount));
                     if (mProgressUpdate) ((WelcomeActivity) mActivity).setProgressMax(pageCount);
 
                     /* For each page of stops, load the stops */
                     for (int i = 1; i <= pageCount; i++) {
 
-                        Log.d(LOG_TAG, "Reading page " + String.valueOf(i) + " of stops");
+//                        Log.d(LOG_TAG, "Reading page " + String.valueOf(i) + " of stops");
 
                         HttpGet httpGetStopsPage = new HttpGet(ServerStatics.HOST + ServerStatics.STOPS_PAGE + String.valueOf(i));
                         HttpResponse execute = client.execute(httpGetStopsPage);
@@ -125,7 +125,7 @@ public class StopsRequest {
 
                         if (mProgressUpdate) {
                             ((WelcomeActivity) mActivity).setProgressCurrent(i);
-                            Log.d(LOG_TAG, "updating progress");
+//                            Log.d(LOG_TAG, "updating progress");
                         }
 
                         while (sc.hasNext()) {
@@ -152,7 +152,7 @@ public class StopsRequest {
                     }
 
                 } catch (IOException e) {
-                    Log.d(LOG_TAG, "Task Execution Failed");
+//                    Log.d(LOG_TAG, "Task Execution Failed");
                     e.printStackTrace();
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -167,6 +167,6 @@ public class StopsRequest {
 
     public void requestProgressUpdate() {
         mProgressUpdate = true;
-        Log.d("PROGRESS BAR", "requesting progress update");
+//        Log.d("PROGRESS BAR", "requesting progress update");
     }
 }

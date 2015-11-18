@@ -72,14 +72,10 @@ public class Vehicle {
 
         currentLocationIndex = i - 1;
 
-        stopHeadsign = stops.get(i).stopHeadsign;
-
         return currentLocationIndex;
     }
 
     public GeoPoint getCurrentLocation() {
-
-        determineCurrentLocationIndex();
 //        Log.d("Vehicle", "Location Index: " + currentLocationIndex);
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
@@ -103,6 +99,8 @@ public class Vehicle {
         currentLocationIndex = i - 1;
         prevStop = i - 1;
         nextStop = i;
+
+        stopHeadsign = stops.get(nextStop).stopHeadsign;
 
         String preTime = stops.get(i - 1).arrivalTime;
         String nextTime = stops.get(i).arrivalTime;

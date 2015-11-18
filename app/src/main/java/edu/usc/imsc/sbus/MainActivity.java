@@ -228,9 +228,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         findViewById(R.id.text_loading_vehicles).setVisibility(View.GONE);
         for (Vehicle v : mVehicles) {
 
-//            Log.d("Main Activity", "Searching for a location");
             if (v.getCurrentLocation() != null) {
-                Log.d("Main Activity", "Found vehicle location");
+//                Log.d("Main Activity", "Found vehicle location");
 
                 if (mVehicleOverlay.updateVehicle(v)) {
                     if (v.hasFocus) {
@@ -274,8 +273,44 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             }
         }
 
-//        PostRequest roadRequest = new PostRequest();
-//        roadRequest.getRoad(this, this, waypoints, v);
+        mMap.getOverlays().remove(mVehiclePath);
+
+        Road road = new Road();
+        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
+        mVehiclePath.setColor(Color.RED);
+        mVehiclePath.setWidth(12);
+
+        mMap.getOverlays().add(mVehiclePath);
+
+        for (int i = 0; i < waypoints.size(); i++) {
+            Stop s = v.stops.get(v.currentLocationIndex + i);
+            GeoPoint g = new GeoPoint(waypoints.get(i));
+
+            if (g != null) {
+
+                if (mStopsOverlay.updateStop(s, g)) {
+                    if (s.hasFocus) {
+                        selectedStopName.setText(s.name);
+                        selectedStopTime.setText(s.arrivalTime);
+                    }
+                } else {
+                    StopOverlayItem stopMarker = new StopOverlayItem(s);
+                    if (s.hasFocus) {
+                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+                        selectedStopName.setText(s.name);
+                        selectedStopTime.setText(s.arrivalTime);
+                    }
+                    mStopsOverlay.addItem(stopMarker);
+                }
+            }
+        }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mMap.invalidate();
+            }
+        });
     }
 
 
@@ -485,11 +520,13 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void onStopClick(Stop s) {
+        hideVehicleRoute();
+        hideVehicles();
+        stopInfoBox.setVisibility(View.VISIBLE);
+        vehicleInfoBox.setVisibility(View.GONE);
         if (s.hasFocus) {
             selectedStopName.setText(s.name);
             selectedStopTime.setText(s.arrivalTime);
-
-            stopInfoBox.setVisibility(View.VISIBLE);
         } else {
             stopInfoBox.setVisibility(View.GONE);
             selectedStopName.setText("Stop Name");
@@ -590,6 +627,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     private void hideVehicleRoute() {
         mMap.getOverlays().remove(mVehiclePath);
+        mMap.invalidate();
+    }
+
+    private void hideVehicles() {
+        mVehicleOverlay.clearItems();
         mMap.invalidate();
     }
 
