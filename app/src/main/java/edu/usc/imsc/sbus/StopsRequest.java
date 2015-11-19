@@ -2,6 +2,7 @@ package edu.usc.imsc.sbus;
 
 import android.app.Activity;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -117,6 +118,7 @@ public class StopsRequest {
 
                         // Create database helper to enter data
                         DatabaseHelper dbh = new DatabaseHelper(mActivity);
+                        SQLiteDatabase db = dbh.beginWriting();
 
                         // Create pattern for the scanner to search for in the input stream
                         Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^\\]]+),\\d+");
@@ -141,12 +143,13 @@ public class StopsRequest {
 
                                 // Enter stop data into database
                                 Stop s = new Stop(stopId, stopName, Double.valueOf(stopLat), Double.valueOf(stopLon));
-                                dbh.insertStop(s);
+                                dbh.insertStop(db, s);
                             } else {
                                 Log.d(LOG_TAG, "Stop Data: " + stopData);
                             }
                         }
 
+                        dbh.endWriting(db);
                         // Close the data stream
                         data.close();
                     }

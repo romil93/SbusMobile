@@ -47,9 +47,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      *              Helper Methods For Inserting Data
      ****************************************************************/
 
-    public long insertStop(Stop s) {
-//        Gets the data repository in write mode
+    public SQLiteDatabase beginWriting() {
+        //        Gets the data repository in write mode
         SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        return db;
+    }
+
+    public void endWriting(SQLiteDatabase db) {
+        db.setTransactionSuccessful();
+        db.endTransaction();
+        db.close();
+    }
+
+    public long insertStop(SQLiteDatabase db, Stop s) {
+
 
 //        Create a new map of values where the column names are the keys
         ContentValues values = new ContentValues();
@@ -59,10 +71,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE, s.longitude);
 
         // Insert the new row, returning the primary key value for the new row
-        long primaryKey = db.insert(DatabaseContract.DataStop.TABLE_NAME, "null", values);
-        db.close();
-
-        return primaryKey;
+        return db.insert(DatabaseContract.DataStop.TABLE_NAME, "null", values);
     }
 
     public long insertVehicle(Vehicle v) {

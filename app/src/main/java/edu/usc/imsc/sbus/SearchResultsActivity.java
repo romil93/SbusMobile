@@ -144,7 +144,8 @@ public class SearchResultsActivity extends ActionBarActivity {
 
         reader.beginArray();
         while (reader.hasNext()) {
-            places.add(readPlace(reader));
+            Place p = readPlace(reader);
+            places.add(p);
         }
         reader.endArray();
         return places;
