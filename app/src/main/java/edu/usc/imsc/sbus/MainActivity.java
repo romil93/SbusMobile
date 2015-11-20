@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.MenuItem;
+import android.widget.ImageButton;
 import android.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -63,10 +64,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private TextView stopTime;
     private TextView vehicleDelay;
     private TextView loadingVehiclesText;
+    private ImageButton vehicleInfoClose;
 
     private View stopInfoBox;
     private TextView selectedStopName;
     private TextView selectedStopTime;
+    private ImageButton stopInfoClose;
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
@@ -78,6 +81,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private ProgressDialog mProgressLocation;
 
     private boolean mShowingActiveStops = false;
+    private MapThread mapThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +91,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mapThread = new MapThread(this);
 
         mStopsFilterDistance = mSharedPreferences.getInt("stopRange", 1000);
 
@@ -142,11 +147,37 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         stopName = (TextView) findViewById(R.id.stop_name);
         stopTime = (TextView) findViewById(R.id.stop_time);
         vehicleDelay = (TextView) findViewById(R.id.delay);
+        vehicleInfoClose = (ImageButton) findViewById(R.id.vehicle_info_close);
 
         stopInfoBox = findViewById(R.id.stop_info);
         stopInfoBox.setVisibility(View.GONE);
         selectedStopName = (TextView) findViewById(R.id.selected_stop_name);
         selectedStopTime = (TextView) findViewById(R.id.selected_stop_time);
+        stopInfoClose = (ImageButton) findViewById(R.id.stop_info_close);
+
+        /* Button Click Handling */
+
+        vehicleInfoClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVehicleOverlay.removeActiveItem();    // Deactivate Vehicle
+                mVehicles.clear();                     // Remove all the vehicles
+                mVehicleOverlay.clearItems();          // Remove vehicles from the map
+                resetVehicleInfoBox();                 // Remove the vehicle info box
+                removeActiveStops();                   // Remove the active stops
+                mStopsOverlay.showAllItems();          // Show all stops
+
+                mMap.invalidate();
+                mapThread.stopThread();
+            }
+        });
+
+        stopInfoClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
 
         /* Make sure the user has location turned on */
         mProgressLocation = new ProgressDialog(this);
@@ -159,6 +190,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
             mMapController.setCenter(startPoint);
         }
+
+
     }
 
 
@@ -240,7 +273,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         Vehicle activeVehicle = new Vehicle();
         if (activeItem != null) {
             activeVehicle = activeItem.vehicle;
-            Log.d("Display Vehicles", "Active Item Exists");
         }
 
         List<OverlayItem> items = new ArrayList<>();
@@ -411,12 +443,21 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         if (mVehicles != null && !mVehicles.isEmpty()) {
 
             // This will update the busses every 5 seconds
-            MapThread mapThread = new MapThread(this);
+
+            mapThread = new MapThread(MainActivity.this);
             mapThread.start();
 
         } else {
             Toast.makeText(this, "Vehicles Not Found", Toast.LENGTH_SHORT).show();
         }
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                loadingVehiclesText.setVisibility(View.INVISIBLE);
+                mMap.invalidate();
+            }
+        });
     }
 
     @Override
@@ -550,7 +591,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             new TransitRequest().getStopTransit(this, this, s.id);  // Show the vehicles that pass through the stop
         }
 
+        loadingVehiclesText.setText("Searching for vehicles that stop here ...");
+        loadingVehiclesText.setVisibility(View.VISIBLE);
+
         mMap.invalidate();
+
+        mMapController.setZoom(15);
     }
 
     @Override

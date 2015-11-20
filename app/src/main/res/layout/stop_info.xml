@@ -41,5 +41,14 @@
             android:textColor="#222222"
             android:textSize="20sp" />
 
+        <ImageButton
+            android:id="@+id/stop_info_close"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="20dp"
+            android:background="#0000"
+            android:src="@drawable/ic_close" />
+
     </TableRow>
 </LinearLayout>

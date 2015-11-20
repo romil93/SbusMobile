@@ -57,13 +57,17 @@ public abstract class MapOverlay {
     }
 
     public void hideAllItems() {
+        Log.d("Map Overlay", "Item Count Before Hide: " + mItems.size());
         mOverlay.removeAllItems();
+        Log.d("Map Overlay", "Item Count After Hide: " + mItems.size());
         mHidden = true;
     }
 
     public void showAllItems() {
-        if (mHidden)
+        if (mHidden) {
+            Log.d("Map Overlay", "Item Count: " + mItems.size());
             mOverlay.addItems(mItems);
+        }
         mHidden = false;
     }
 

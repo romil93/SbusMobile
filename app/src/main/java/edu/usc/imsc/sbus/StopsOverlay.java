@@ -22,13 +22,14 @@ public class StopsOverlay extends MapOverlay {
         mListener = listener;
         mHidden = false;
         mItems = new ArrayList<>();
+        ArrayList<OverlayItem> items = new ArrayList<>();
         ResourceProxy resourceProxy = new DefaultResourceProxyImpl(mContext);
 
         mIcon = mContext.getResources().getDrawable(StopOverlayItem.iconId);
         mActiveIcon = mContext.getResources().getDrawable(StopOverlayItem.focusedIconId);
 
         mOverlay = new ItemizedIconOverlay<>(
-                mItems, mIcon,
+                items, mIcon,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(int i, OverlayItem myOverlayItem) {

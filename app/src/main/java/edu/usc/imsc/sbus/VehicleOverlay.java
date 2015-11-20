@@ -22,13 +22,14 @@ public class VehicleOverlay extends MapOverlay{
         mListener = listener;
         mHidden = false;
         mItems = new ArrayList<>();
+        ArrayList<OverlayItem> items = new ArrayList<>();
         ResourceProxy resourceProxy = new DefaultResourceProxyImpl(mContext);
 
         mIcon = mContext.getResources().getDrawable(VehicleOverlayItem.iconId);
         mActiveIcon = mContext.getResources().getDrawable(VehicleOverlayItem.focusedIconId);
 
         mOverlay = new ItemizedIconOverlay<>(
-                mItems, mIcon,
+                items, mIcon,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(int i, OverlayItem myOverlayItem) {
