@@ -139,10 +139,12 @@ public class TransitRequest {
                     }
                     Log.d(LOG_TAG, vehicleArray.getString(i));
 
-                    mVehicles.add(v);
+                    if (v.getCurrentLocation() != null) {
+                        mVehicles.add(v);
+                    } else {
+                        Log.d("Transit Request", "Vehicle Has No Location");
+                    }
                 }
-
-                Log.d(LOG_TAG, "DONE");
 
             } catch (Exception e) {
                 e.printStackTrace();

@@ -1,6 +1,5 @@
 package edu.usc.imsc.sbus;
 
-import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -145,7 +144,8 @@ public class SearchResultsActivity extends ActionBarActivity {
         reader.beginArray();
         while (reader.hasNext()) {
             Place p = readPlace(reader);
-            places.add(p);
+            if (p.name.contains("Los Angeles"))
+                places.add(p);
         }
         reader.endArray();
         return places;

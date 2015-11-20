@@ -28,8 +28,6 @@ public class Stop {
     public int sequence;
     public String arrivalTime;
 
-    boolean hasFocus;
-
     public GeoPoint getGeoPoint() {
         return new GeoPoint(latitude, longitude);
     }

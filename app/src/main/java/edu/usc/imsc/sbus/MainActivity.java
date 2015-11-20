@@ -6,6 +6,7 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
@@ -32,8 +33,10 @@ import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.TilesOverlay;
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -47,8 +50,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private IMapController mMapController;
     private LocationManager mLocationManager;
 
-    private MyOverlay mVehicleOverlay;
-    private MyOverlay mStopsOverlay;
+    private VehicleOverlay mVehicleOverlay;
+    private StopsOverlay mStopsOverlay;
+    private StopsOverlay mActiveStopsOverlay;
+    //    private Overlay mLocationOverlay;
     private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
@@ -72,7 +77,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private SharedPreferences mSharedPreferences;
     private ProgressDialog mProgressLocation;
 
-    private int mFocusedVehicleLastIndex = 0;
+    private boolean mShowingActiveStops = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,11 +111,15 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mMapController.setCenter(new GeoPoint(34.0205, -118.2856));
 
         // Create and add Vehicle Overlay
-        mVehicleOverlay = new MyOverlay(this, getResources().getDrawable(VehicleOverlayItem.iconId), this);
+        mVehicleOverlay = new VehicleOverlay(this, this);
         mMap.getOverlays().add(mVehicleOverlay.getOverlay());
         // Create and add a Stops Overlay
-        mStopsOverlay = new MyOverlay(this, getResources().getDrawable(StopOverlayItem.iconId), this);
+        mStopsOverlay = new StopsOverlay(this, this);
+        mActiveStopsOverlay = new StopsOverlay(this, this);
         mMap.getOverlays().add(mStopsOverlay.getOverlay());
+        mMap.getOverlays().add(mActiveStopsOverlay.getOverlay());
+        // Creat Location Overlay
+//        mLocationOverlay = new MyLocationNewOverlay(this, mMap);
         // Create and add a road manager
         mRoadManager = new OSRMRoadManager();
 
@@ -226,91 +235,119 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
      */
     public void displayMapVehicles() {
         findViewById(R.id.text_loading_vehicles).setVisibility(View.GONE);
-        for (Vehicle v : mVehicles) {
 
-            if (v.getCurrentLocation() != null) {
-//                Log.d("Main Activity", "Found vehicle location");
-
-                if (mVehicleOverlay.updateVehicle(v)) {
-                    if (v.hasFocus) {
-                        // Update the route
-
-                        if (mFocusedVehicleLastIndex != v.currentLocationIndex) {
-                            mMap.getOverlays().remove(mVehiclePath);
-                            displayVehicleRoute(v);
-                            mFocusedVehicleLastIndex = v.currentLocationIndex;
-                        }
-                        // Update the info box
-                        vehicleName.setText(v.stopHeadsign);
-                        stopName.setText(v.stops.get(v.nextStop).name);
-                        stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-                    }
-                } else {
-                    VehicleOverlayItem vehicleItem = new VehicleOverlayItem(v);
-                    if (v.hasFocus) {
-                        // Update the route
-                        displayVehicleRoute(v);
-                        // Set the marker to vehicle selected
-                        vehicleItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
-                        // Update the info box
-                        vehicleName.setText(v.stopHeadsign);
-                        stopName.setText(v.stops.get(v.nextStop).name);
-                        stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-
-                    }
-                    mVehicleOverlay.addItem(vehicleItem);
-                }
-            }
+        VehicleOverlayItem activeItem = (VehicleOverlayItem) mVehicleOverlay.getActiveItem();
+        Vehicle activeVehicle = new Vehicle();
+        if (activeItem != null) {
+            activeVehicle = activeItem.vehicle;
+            Log.d("Display Vehicles", "Active Item Exists");
         }
+
+        List<OverlayItem> items = new ArrayList<>();
+        for (Vehicle v : mVehicles) {
+            VehicleOverlayItem vItem = new VehicleOverlayItem(v);
+            if (v.tripId.equals(activeVehicle.tripId))
+                vItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+            items.add(vItem);
+        }
+
+        mVehicleOverlay.updateAllItems(items);
         mMap.invalidate();
+
+//        for (Vehicle v : mVehicles) {
+//
+//            if (v.getCurrentLocation() != null) {
+////                Log.d("Main Activity", "Found vehicle location");
+//
+//                if (mVehicleOverlay.updateVehicle(v)) {
+//                    if (v.hasFocus) {
+//                        // Update the route
+//
+//                        if (mFocusedVehicleLastIndex != v.currentLocationIndex) {
+//                            mMap.getOverlays().remove(mVehiclePath);
+//                            displayVehicleRoute(v);
+//                            mFocusedVehicleLastIndex = v.currentLocationIndex;
+//                        }
+//                        // Update the info box
+//                        vehicleName.setText(v.stopHeadsign);
+//                        stopName.setText(v.stops.get(v.nextStop).name);
+//                        stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
+//                    }
+//                } else {
+//                    VehicleOverlayItem vehicleItem = new VehicleOverlayItem(v);
+//                    if (v.hasFocus) {
+//                        // Update the route
+//                        displayVehicleRoute(v);
+//                        // Set the marker to vehicle selected
+//                        vehicleItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+//                        // Update the info box
+//                        vehicleName.setText(v.stopHeadsign);
+//                        stopName.setText(v.stops.get(v.nextStop).name);
+//                        stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
+//
+//                    }
+//                    mVehicleOverlay.addItem(vehicleItem);
+//                }
+//            }
+//        }
+//        mMap.invalidate();
     }
 
     private void displayVehicleRoute(final Vehicle v) {
-        final ArrayList<GeoPoint> waypoints = new ArrayList<>();
-        for (int i = 0; i < v.stops.size(); i++) {
-            if (i >= v.currentLocationIndex) {
-                waypoints.add(new GeoPoint(v.stops.get(i).latitude, v.stops.get(i).longitude));
-            }
+//        final ArrayList<GeoPoint> waypoints = new ArrayList<>();
+//        for (int i = 0; i < v.stops.size(); i++) {
+//            if (i >= v.currentLocationIndex) {
+//                waypoints.add(new GeoPoint(v.stops.get(i).latitude, v.stops.get(i).longitude));
+//            }
+//        }
+//
+//        mMap.getOverlays().remove(mVehiclePath);
+//
+//        Road road = new Road();
+//        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
+//        mVehiclePath.setColor(Color.RED);
+//        mVehiclePath.setWidth(12);
+//
+//        mMap.getOverlays().add(mVehiclePath);
+//
+//        for (int i = 0; i < waypoints.size(); i++) {
+//            Stop s = v.stops.get(v.currentLocationIndex + i);
+//            GeoPoint g = new GeoPoint(waypoints.get(i));
+//
+//            if (g != null) {
+//
+//                if (mStopsOverlay.updateStop(s, g)) {
+//                    if (s.hasFocus) {
+//                        selectedStopName.setText(s.name);
+//                        selectedStopTime.setText(s.arrivalTime);
+//                    }
+//                } else {
+//                    StopOverlayItem stopMarker = new StopOverlayItem(s);
+//                    if (s.hasFocus) {
+//                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+//                        selectedStopName.setText(s.name);
+//                        selectedStopTime.setText(s.arrivalTime);
+//                    }
+//                    mStopsOverlay.addItem(stopMarker);
+//                }
+//            }
+//        }
+//
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                mMap.invalidate();
+//            }
+//        });
+    }
+
+    private void displayActiveStops(Vehicle v) {
+        List<OverlayItem> sItems = new ArrayList<>();
+        for (Stop s : v.stops) {
+            sItems.add(new StopOverlayItem(s));
         }
-
-        mMap.getOverlays().remove(mVehiclePath);
-
-        Road road = new Road();
-        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
-        mVehiclePath.setColor(Color.RED);
-        mVehiclePath.setWidth(12);
-
-        mMap.getOverlays().add(mVehiclePath);
-
-        for (int i = 0; i < waypoints.size(); i++) {
-            Stop s = v.stops.get(v.currentLocationIndex + i);
-            GeoPoint g = new GeoPoint(waypoints.get(i));
-
-            if (g != null) {
-
-                if (mStopsOverlay.updateStop(s, g)) {
-                    if (s.hasFocus) {
-                        selectedStopName.setText(s.name);
-                        selectedStopTime.setText(s.arrivalTime);
-                    }
-                } else {
-                    StopOverlayItem stopMarker = new StopOverlayItem(s);
-                    if (s.hasFocus) {
-                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
-                        selectedStopName.setText(s.name);
-                        selectedStopTime.setText(s.arrivalTime);
-                    }
-                    mStopsOverlay.addItem(stopMarker);
-                }
-            }
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mMap.invalidate();
-            }
-        });
+        mActiveStopsOverlay.updateAllItems(sItems);
+        mShowingActiveStops = true;
     }
 
 
@@ -358,7 +395,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private void updateLocation(Location location) {
         GeoPoint geoPoint = new GeoPoint(location);
         mMapController.setCenter(geoPoint);
-        mVehicleOverlay.updateLocationItem(new GeoPoint(location));
+//        mVehicleOverlay.updateLocationItem(new GeoPoint(location));
         mMap.invalidate();
     }
 
@@ -370,18 +407,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void CurrentTransitResponse(List<Vehicle> vehicles) {
-        Log.d("Main Activity", "Current Transit Response - Begin");
         mVehicles = vehicles;
         if (mVehicles != null && !mVehicles.isEmpty()) {
-
-            Log.d("Main Activity", String.valueOf(mVehicles.size()) + " vehicles");
 
             // This will update the busses every 5 seconds
             MapThread mapThread = new MapThread(this);
             mapThread.start();
-
-//            mAdapter = new VehiclesAdapter(this, R.layout.vehicle_search_item, mVehicles);
-//            mSearchText.setAdapter(mAdapter);
 
         } else {
             Toast.makeText(this, "Vehicles Not Found", Toast.LENGTH_SHORT).show();
@@ -423,43 +454,43 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void RoadResponse(Road road, ArrayList<GeoPoint> waypoints, Vehicle v) {
-        mMap.getOverlays().remove(mVehiclePath);
-
-        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
-        mVehiclePath.setColor(Color.RED);
-        mVehiclePath.setWidth(12);
-
-        mMap.getOverlays().add(mVehiclePath);
-
-        for (int i = 0; i < waypoints.size(); i++) {
-            Stop s = v.stops.get(v.currentLocationIndex + i);
-            GeoPoint g = new GeoPoint(waypoints.get(i));
-
-            if (g != null) {
-
-                if (mStopsOverlay.updateStop(s, g)) {
-                    if (s.hasFocus) {
-                        selectedStopName.setText(s.name);
-                        selectedStopTime.setText(s.arrivalTime);
-                    }
-                } else {
-                    StopOverlayItem stopMarker = new StopOverlayItem(s);
-                    if (s.hasFocus) {
-                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
-                        selectedStopName.setText(s.name);
-                        selectedStopTime.setText(s.arrivalTime);
-                    }
-                    mStopsOverlay.addItem(stopMarker);
-                }
-            }
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mMap.invalidate();
-            }
-        });
+//        mMap.getOverlays().remove(mVehiclePath);
+//
+//        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
+//        mVehiclePath.setColor(Color.RED);
+//        mVehiclePath.setWidth(12);
+//
+//        mMap.getOverlays().add(mVehiclePath);
+//
+//        for (int i = 0; i < waypoints.size(); i++) {
+//            Stop s = v.stops.get(v.currentLocationIndex + i);
+//            GeoPoint g = new GeoPoint(waypoints.get(i));
+//
+//            if (g != null) {
+//
+//                if (mStopsOverlay.updateStop(s, g)) {
+//                    if (s.hasFocus) {
+//                        selectedStopName.setText(s.name);
+//                        selectedStopTime.setText(s.arrivalTime);
+//                    }
+//                } else {
+//                    StopOverlayItem stopMarker = new StopOverlayItem(s);
+//                    if (s.hasFocus) {
+//                        stopMarker.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+//                        selectedStopName.setText(s.name);
+//                        selectedStopTime.setText(s.arrivalTime);
+//                    }
+//                    mStopsOverlay.addItem(stopMarker);
+//                }
+//            }
+//        }
+//
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                mMap.invalidate();
+//            }
+//        });
     }
 
     @Override
@@ -493,46 +524,31 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
     @Override
     public void onVehicleClick(Vehicle v) {
-        hideVehicleRoute();
-//        hideVehicleStops();
-        stopInfoBox.setVisibility(View.GONE);
-        if (v.hasFocus) {
-//            PostRequest post = new PostRequest();
-//            post.getVehicleDelay(this, this, v);
-            vehicleName.setText(v.stopHeadsign);
-            stopName.setText(v.stops.get(v.nextStop).name);
-            stopTime.setText(v.stops.get(v.nextStop).arrivalTime);
-            vehicleDelay.setText("");
-            displayVehicleRoute(v);
 
-            vehicleInfoBox.setVisibility(View.VISIBLE);
-        } else {
-            vehicleInfoBox.setVisibility(View.GONE);
-            vehicleName.setText("Vehicle Name");
-            stopName.setText("Stop Name");
-            stopTime.setText("Stop Time");
-            vehicleDelay.setText("");
-            mStopsOverlay.removePreviousStop();
-        }
+        resetVehicleInfoBox();              // Hide details for previously selected vehicle
+        removeActiveStops();                // Remove Active Stops
+        mStopsOverlay.hideAllItems();       // Temporarily hide all stops on the map
+        // Show the details for the selected vehicle
+        displayVehicleInfo(v.stopHeadsign, v.stops.get(v.nextStop).name, v.stops.get(v.nextStop).arrivalTime);
+        displayVehicleRoute(v);             // Show the route the vehicle will take
+        displayActiveStops(v);              // Show the stops related to the selected vehicle
 
         mMap.invalidate();
     }
 
     @Override
     public void onStopClick(Stop s) {
-        hideVehicleRoute();
-        hideVehicles();
-        stopInfoBox.setVisibility(View.VISIBLE);
-        vehicleInfoBox.setVisibility(View.GONE);
-        if (s.hasFocus) {
-            selectedStopName.setText(s.name);
-            selectedStopTime.setText(s.arrivalTime);
-        } else {
-            stopInfoBox.setVisibility(View.GONE);
-            selectedStopName.setText("Stop Name");
-            selectedStopTime.setText("Arrival Time");
+
+        if (mShowingActiveStops) {  // If clicking on an active stop
+            // Show Stop Info
+        } else {                    // If clicking on a normal stop
+            mVehicleOverlay.clearItems();           // Hide all vehicles on the map
+            mMap.getOverlays().remove(mVehiclePath);// Hide the active vehicle route
+            resetStopInfoBox();                     // Hide details for the previously selected stop
+            resetVehicleInfoBox();                  // Hide details for the previously selected vehicle
+            displayStopInfo(s.name, s.arrivalTime); // Show information for the selected stop
+            new TransitRequest().getStopTransit(this, this, s.id);  // Show the vehicles that pass through the stop
         }
-        new TransitRequest().getStopTransit(this, this, s.id);
 
         mMap.invalidate();
     }
@@ -545,44 +561,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
      *                       Helper Functions                                 ***
      ****************************************************************************/
 
-    /**
-     * Filter Nearby Vehicles
-     * @return
-     */
-    private List<Vehicle> filterVehiclesByDistance() {
-
-        List<Vehicle> tempVehicles = new ArrayList<>();
-        int count = 0;
-        for (Vehicle v : mVehicles) {
-
-            tempVehicles.add(v);
-
-            if (count >= 200) {
-                break;
-            }
-            count++;
-        }
-
-        return tempVehicles;
-
-//        List<Vehicle> closeVehicles = new ArrayList<>();
-//
-//        for (Vehicle v : mVehicles) {
-//
-//            GeoPoint geoPoint = v.getCurrentLocation();
-//
-//            if (geoPoint != null) {
-//
-//                GeoPoint cLoc = new GeoPoint(mLocation);
-//                // If the bus is more than ~3 miles away, don't show
-//                if (cLoc.distanceTo(geoPoint) < defaultDistance) {
-//                    closeVehicles.add(v);
-//                }
-//            }
-//        }
-//
-//        return closeVehicles;
-    }
 
     /**
      * Filter Nearby Stops
@@ -620,19 +598,36 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         }
     }
 
-    private void hideVehicleStops() {
-        mStopsOverlay.clearItems();
-        mMap.invalidate();
+    private void resetVehicleInfoBox() {
+        vehicleInfoBox.setVisibility(View.GONE);
+        vehicleName.setText("Vehicle Name");
+        stopName.setText("Stop Name");
+        stopTime.setText("Stop Time");
+        vehicleDelay.setText("");
     }
 
-    private void hideVehicleRoute() {
-        mMap.getOverlays().remove(mVehiclePath);
-        mMap.invalidate();
+    private void displayVehicleInfo(String vName, String nextStop, String arrivalTime) {
+        vehicleName.setText(vName);
+        stopName.setText(nextStop);
+        stopTime.setText(arrivalTime);
+        vehicleInfoBox.setVisibility(View.VISIBLE);
     }
 
-    private void hideVehicles() {
-        mVehicleOverlay.clearItems();
-        mMap.invalidate();
+    private void resetStopInfoBox() {
+        stopInfoBox.setVisibility(View.GONE);
+        selectedStopName.setText("Stop Name");
+        selectedStopTime.setText("Arrival Time");
+    }
+
+    private void displayStopInfo(String name, String arrivalTime) {
+        selectedStopName.setText(name);
+        selectedStopTime.setText(arrivalTime);
+        stopInfoBox.setVisibility(View.VISIBLE);
+    }
+
+    private void removeActiveStops() {
+        mActiveStopsOverlay.clearItems();
+        mShowingActiveStops = false;
     }
 
     /*********
