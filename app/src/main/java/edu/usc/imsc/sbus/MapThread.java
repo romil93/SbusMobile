@@ -1,7 +1,5 @@
 package edu.usc.imsc.sbus;
 
-import android.util.Log;
-
 /**
  * Created by danielCantwell on 4/15/15.
  */
@@ -33,8 +31,6 @@ public class MapThread extends Thread {
                 e.printStackTrace();
             }
         }
-
-        Log.d("Map Thread", "Thread Stopped");
     }
 
     public void stopThread() {

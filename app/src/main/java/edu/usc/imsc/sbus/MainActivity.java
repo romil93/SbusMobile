@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.OSRMRoadManager;
@@ -34,6 +35,7 @@ import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.TilesOverlay;
@@ -54,7 +56,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private VehicleOverlay mVehicleOverlay;
     private StopsOverlay mStopsOverlay;
     private StopsOverlay mActiveStopsOverlay;
-    //    private Overlay mLocationOverlay;
+    private ItemizedIconOverlay mLocationOverlay;
+    private OverlayItem mLocationItem;
     private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
@@ -83,6 +86,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private boolean mShowingActiveStops = false;
     private MapThread mapThread;
 
+    private long mLastLocationUpdateTime;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,6 +97,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         setSupportActionBar(toolbar);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mapThread = new MapThread(this);
+
+        mLastLocationUpdateTime = Calendar.getInstance().getTimeInMillis();
 
         mStopsFilterDistance = mSharedPreferences.getInt("stopRange", 1000);
 
@@ -123,10 +130,20 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mActiveStopsOverlay = new StopsOverlay(this, this);
         mMap.getOverlays().add(mStopsOverlay.getOverlay());
         mMap.getOverlays().add(mActiveStopsOverlay.getOverlay());
-        // Creat Location Overlay
-//        mLocationOverlay = new MyLocationNewOverlay(this, mMap);
         // Create and add a road manager
         mRoadManager = new OSRMRoadManager();
+
+        // Creat Location Overlay
+
+        mLocationItem = new OverlayItem("Location", "Location", new GeoPoint(34.0205, -118.2856));
+        mLocationItem.setMarker(getResources().getDrawable(R.drawable.ic_action_location_found));
+        List<OverlayItem> singleLocationItemList = new ArrayList<>();
+        mLocationOverlay = new ItemizedIconOverlay<>(
+                singleLocationItemList,
+                getResources().getDrawable(R.drawable.ic_action_location_found),
+                null,
+                new DefaultResourceProxyImpl(this));
+        mMap.getOverlays().add(mLocationOverlay);
 
         mLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         /* Set map center point if location exists */
@@ -160,22 +177,26 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         vehicleInfoClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mVehicleOverlay.removeActiveItem();    // Deactivate Vehicle
+                mVehicleOverlay.removeActiveItem();    // Deactivate Selected Vehicle
                 mVehicles.clear();                     // Remove all the vehicles
                 mVehicleOverlay.clearItems();          // Remove vehicles from the map
                 resetVehicleInfoBox();                 // Remove the vehicle info box
                 removeActiveStops();                   // Remove the active stops
                 mStopsOverlay.showAllItems();          // Show all stops
 
-                mMap.invalidate();
-                mapThread.stopThread();
+                mMap.invalidate();                     // Update the map
+                mapThread.stopThread();                // Stop trying to display the vehicles on the map
             }
         });
 
         stopInfoClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (mShowingActiveStops) {
 
+                } else {
+
+                }
             }
         });
 
@@ -190,7 +211,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
             mMapController.setCenter(startPoint);
         }
-
 
     }
 
@@ -393,14 +413,26 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     @Override
     public void onLocationChanged(Location location) {
         mLocation = location;
+        GeoPoint myLocation = new GeoPoint(mLocation);
         if (mProgressLocation.isShowing()) {
 
             mProgressLocation.dismiss();
-            GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
-            mMapController.setCenter(startPoint);
+            mMapController.setCenter(myLocation);
 
             /* Start loading the stops, either from server or from sqlite */
             new StopsRequest(RequestType.Local).getAllStops(this, this);
+
+            mLocationOverlay.removeAllItems();
+            mLocationItem = new OverlayItem("Location", "Location", myLocation);
+            mLocationOverlay.addItem(mLocationItem);
+            mMap.invalidate();
+            mLastLocationUpdateTime = Calendar.getInstance().getTimeInMillis();
+        } else if (mLastLocationUpdateTime < (Calendar.getInstance().getTimeInMillis() - 10000)) {
+            mLocationOverlay.removeAllItems();
+            mLocationItem = new OverlayItem("Location", "Location", myLocation);
+            mLocationOverlay.addItem(mLocationItem);
+            mMap.invalidate();
+            mLastLocationUpdateTime = Calendar.getInstance().getTimeInMillis();
         }
     }
 
