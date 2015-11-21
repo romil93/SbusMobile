@@ -42,6 +42,7 @@ public abstract class MapOverlay {
     }
 
     public void removeActiveItem() {
+        if (mActiveItem != null) mActiveItem.setMarker(mIcon);
         mActiveItem = null;
     }
 

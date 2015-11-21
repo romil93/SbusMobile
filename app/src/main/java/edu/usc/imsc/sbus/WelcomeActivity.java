@@ -83,7 +83,7 @@ public class WelcomeActivity extends Activity implements DataRequestListener {
     }
 
     @Override
-    public void RoadResponse(Road road, ArrayList<GeoPoint> waypoints, Vehicle v) {
+    public void RoadResponse(Road road) {
 
     }
 
