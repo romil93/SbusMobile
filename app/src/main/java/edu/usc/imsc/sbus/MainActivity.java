@@ -306,8 +306,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         for (Vehicle v : mVehicles) {
             if (v.getCurrentLocation() != null) {
                 VehicleOverlayItem vItem = new VehicleOverlayItem(v);
-                if (v.tripId.equals(activeVehicle.tripId))
-                    vItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
+                if (v.tripId.equals(activeVehicle.tripId)) {
+                    vItem.setMarker(vItem.getActiveIcon(this));
+                } else {
+                    vItem.setMarker(vItem.getNormalIcon(this));
+                }
+//                    vItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
                 items.add(vItem);
             }
         }
