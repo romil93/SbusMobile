@@ -16,13 +16,16 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -74,6 +77,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private TextView selectedStopName;
     private TextView selectedStopTime;
     private ImageButton stopInfoClose;
+
+    private TableRow rowChangeLocation;
+    private Button changeLocationButton;
+    private ImageView mapCenterImage;
+    private ImageButton locationCancelButton;
 
     //    private boolean bDefaultZoom = true;
     private int defaultZoom = 16;
@@ -172,6 +180,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         selectedStopTime = (TextView) findViewById(R.id.selected_stop_time);
         stopInfoClose = (ImageButton) findViewById(R.id.stop_info_close);
 
+        rowChangeLocation = (TableRow) findViewById(R.id.row_change_location);
+        changeLocationButton = (Button) findViewById(R.id.changeLocation);
+        mapCenterImage = (ImageView) findViewById(R.id.mapCenter);
+        locationCancelButton = (ImageButton) findViewById(R.id.locationCancel);
+
         /* Button Click Handling */
 
         vehicleInfoClose.setOnClickListener(new View.OnClickListener() {
@@ -204,6 +217,24 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                 resetStopInfoBox();
 
                 mMap.invalidate();
+            }
+        });
+
+        changeLocationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mFilterLocation = (GeoPoint) mMap.getMapCenter();
+                new StopsRequest(RequestType.Local).getAllStops(MainActivity.this, MainActivity.this);
+                mapCenterImage.setVisibility(View.GONE);
+                rowChangeLocation.setVisibility(View.GONE);
+            }
+        });
+
+        locationCancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mapCenterImage.setVisibility(View.GONE);
+                rowChangeLocation.setVisibility(View.GONE);
             }
         });
 
@@ -275,9 +306,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                     Toast.makeText(this, "Current Location Not Known", Toast.LENGTH_SHORT).show();
                 }
                 return true;
-//            case R.id.settings:
-//                Toast.makeText(this, "Settings", Toast.LENGTH_SHORT).show();
-//                return true;
+            case R.id.changeLocation:
+                rowChangeLocation.setVisibility(View.VISIBLE);
+                mapCenterImage.setVisibility(View.VISIBLE);
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }

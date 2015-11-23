@@ -10,8 +10,7 @@
         android:layout_height="wrap_content"
         android:background="@color/material_deep_teal_500"
         android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        />
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <org.osmdroid.views.MapView
         android:id="@+id/map"
@@ -43,6 +42,41 @@
         layout="@layout/vehicle_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/toolbar"/>
+        android:layout_below="@+id/toolbar" />
+
+    <TableRow
+        android:id="@+id/row_change_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:background="#FFF"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/changeLocation"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="8"
+            android:background="#0FFF"
+            android:text="Load Transit at This Location" />
+
+        <ImageButton
+            android:id="@+id/locationCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:background="#0FFF"
+            android:src="@drawable/ic_close" />
+    </TableRow>
+
+    <ImageView
+        android:id="@+id/mapCenter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:src="@drawable/ic_place"
+        android:visibility="gone" />
 
 </RelativeLayout>

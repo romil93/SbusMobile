@@ -15,4 +15,9 @@
         android:title="Current Location"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/changeLocation"
+        android:title="Change Location"
+        app:showAsAction="never" />
+
 </menu>
