@@ -57,13 +57,22 @@ public abstract class MapOverlay {
         addItems(newItems);
     }
 
-    public void hideAllItems() {
+//    public void hideAllItems() {
+//        mOverlay.removeAllItems();
+//        mHidden = true;
+//    }
+
+    public void hideItemsExceptActive() {
         mOverlay.removeAllItems();
         mHidden = true;
+        mOverlay.addItem(mActiveItem);
     }
 
     public void showAllItems() {
-        if (mHidden) mOverlay.addItems(mItems);
+        if (mHidden) {
+            mOverlay.removeAllItems();
+            mOverlay.addItems(mItems);
+        }
         mHidden = false;
     }
 

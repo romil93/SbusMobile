@@ -16,7 +16,7 @@ public interface DataRequestListener {
 
     void VehicleDelayResponse(Vehicle v, float seconds);
 
-    void RoadResponse(Road road);
+    void RouteResponse(List<GeoPoint> waypoints);
 
     void StopsResponse(List<Stop> stops);
 }

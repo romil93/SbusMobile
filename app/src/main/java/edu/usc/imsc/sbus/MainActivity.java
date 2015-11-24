@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -35,6 +36,9 @@ import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
+import org.osmdroid.events.MapListener;
+import org.osmdroid.events.ScrollEvent;
+import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
@@ -47,6 +51,8 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class MainActivity extends ActionBarActivity implements LocationListener, DataRequestListener, MapClickListener {
@@ -62,7 +68,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private StopsOverlay mActiveStopsOverlay;
     private ItemizedIconOverlay mLocationOverlay;
     private OverlayItem mLocationItem;
-    private RoadManager mRoadManager;
     private Polyline mVehiclePath;
 
     private View vehicleInfoBox;
@@ -84,7 +89,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     private ImageButton locationCancelButton;
 
     //    private boolean bDefaultZoom = true;
-    private int defaultZoom = 16;
+    private int mZoomLevel = 16;
     private int mStopsFilterDistance; // units in meters
     private GeoPoint mFilterLocation = null;
 
@@ -127,21 +132,20 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 
         /* Set a Default Map Point */
         mMapController = mMap.getController();
-        mMapController.setZoom(defaultZoom);
+        mMapController.setZoom(mZoomLevel);
         mMapController.setCenter(new GeoPoint(34.0205, -118.2856));
 
+        // Create and add a Stops Overlay
+        mStopsOverlay = new StopsOverlay(this, this, StopsOverlay.Type.Normal);
+        mActiveStopsOverlay = new StopsOverlay(this, this, StopsOverlay.Type.Active);
+        mMap.getOverlays().add(mStopsOverlay.getOverlay());
+        mMap.getOverlays().add(mActiveStopsOverlay.getOverlay());
         // Create and add Vehicle Overlay
         mVehicleOverlay = new VehicleOverlay(this, this);
         mMap.getOverlays().add(mVehicleOverlay.getOverlay());
-        // Create and add a Stops Overlay
-        mStopsOverlay = new StopsOverlay(this, this);
-        mActiveStopsOverlay = new StopsOverlay(this, this);
-        mMap.getOverlays().add(mStopsOverlay.getOverlay());
-        mMap.getOverlays().add(mActiveStopsOverlay.getOverlay());
-        // Create and add a road manager
-        mRoadManager = new OSRMRoadManager();
 
-        // Creat Location Overlay
+
+        // Create Location Overlay
 
         mLocationItem = new OverlayItem("Location", "Location", new GeoPoint(34.0205, -118.2856));
         mLocationItem.setMarker(getResources().getDrawable(R.drawable.ic_action_location_found));
@@ -197,6 +201,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                 mMap.getOverlays().remove(mVehiclePath);
                 removeActiveStops();                   // Remove the active stops
                 mStopsOverlay.showAllItems();          // Show all stops
+                mStopsOverlay.removeActiveItem();
+
+                if (mShowingActiveStops) {
+                    resetStopInfoBox();
+                }
 
                 mapThread.stopThread();                // Stop trying to display the vehicles on the map
                 mMap.invalidate();                     // Update the map
@@ -211,6 +220,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
                 } else {
                     mVehicles.clear();
                     mVehicleOverlay.clearItems();
+                    mStopsOverlay.showAllItems();          // Show all stops
                     mStopsOverlay.removeActiveItem();
                     mapThread.stopThread();                // Stop trying to display the vehicles on the map
                 }
@@ -238,6 +248,34 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             }
         });
 
+//        mMap.setMapListener(new MapListener() {
+//            @Override
+//            public boolean onScroll(ScrollEvent scrollEvent) {
+//                return false;
+//            }
+//
+//            @Override
+//            public boolean onZoom(final ZoomEvent zoomEvent) {
+//
+//                if (mShowingActiveStops) {
+//                    mZoomLevel = zoomEvent.getZoomLevel();
+//                    new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            mActiveStopsOverlay.updateIconSize(zoomEvent.getZoomLevel());
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    mMap.invalidate();
+//                                }
+//                            });
+//                        }
+//                    }.run();
+//                }
+//                return false;
+//            }
+//        });
+
         /* Make sure the user has location turned on */
         mProgressLocation = new ProgressDialog(this);
         mProgressLocation.setMessage("Searching for location. Please ensure GPS is on.");
@@ -249,7 +287,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             GeoPoint startPoint = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
             mMapController.setCenter(startPoint);
         }
-
     }
 
 
@@ -338,10 +375,30 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         for (Vehicle v : mVehicles) {
             if (v.getCurrentLocation() != null) {
                 VehicleOverlayItem vItem = new VehicleOverlayItem(v);
+                int zoomLevel = mMap.getZoomLevel();
+                float fontSize;
+                switch (zoomLevel) {
+                    case 12: fontSize = 40f; break;
+                    case 13: fontSize = 45f; break;
+                    case 14: fontSize = 50f; break;
+                    case 15: fontSize = 55f; break;
+                    case 16: fontSize = 60f; break;
+                    case 17: fontSize = 65f; break;
+                    default: fontSize = 70f; break;
+                }
                 if (v.tripId.equals(activeVehicle.tripId)) {
-                    vItem.setMarker(vItem.getActiveIcon(this));
+//                    vItem.setMarker(vItem.getActiveIcon(this));
+                    Drawable icon = getResources().getDrawable(VehicleOverlayItem.focusedIconId);
+                    Drawable textIcon = VehicleOverlayItem.createMarkerIcon(icon, v.routeId, VehicleOverlayItem.Type.Active, fontSize);
+                    vItem.setMarker(textIcon);
+                    v.determineCurrentLocationIndex();
+                    displayVehicleInfo(v.stopHeadsign, v.stops.get(v.nextStop).name, v.stops.get(v.nextStop).arrivalTime);
+
                 } else {
-                    vItem.setMarker(vItem.getNormalIcon(this));
+//                    vItem.setMarker(vItem.getNormalIcon(this));
+                    Drawable icon = getResources().getDrawable(VehicleOverlayItem.iconId);
+                    Drawable textIcon = VehicleOverlayItem.createMarkerIcon(icon, v.routeId, VehicleOverlayItem.Type.Normal, fontSize);
+                    vItem.setMarker(textIcon);
                 }
 //                    vItem.setMarker(getResources().getDrawable(VehicleOverlayItem.focusedIconId));
                 items.add(vItem);
@@ -353,22 +410,15 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     }
 
     private void displayVehicleRoute(final Vehicle v) {
-        final ArrayList<GeoPoint> waypoints = new ArrayList<>();
-        for (int i = 0; i < v.stops.size(); i++) {
-            if (i >= v.currentLocationIndex) {
-                waypoints.add(new GeoPoint(v.stops.get(i).latitude, v.stops.get(i).longitude));
-            }
-        }
-
-        mMap.getOverlays().remove(mVehiclePath);
-
-        new BuildRoadRequest(this).execute(waypoints);
+        new BuildRoadRequest(this).execute(v);
     }
 
     private void displayActiveStops(Vehicle v) {
         List<OverlayItem> sItems = new ArrayList<>();
         for (Stop s : v.stops) {
-            sItems.add(new StopOverlayItem(s));
+            StopOverlayItem sItem = new StopOverlayItem(s);
+            sItem.setMarker(getResources().getDrawable(R.drawable.stop_large));
+            sItems.add(sItem);
         }
         mActiveStopsOverlay.updateAllItems(sItems);
         mShowingActiveStops = true;
@@ -463,6 +513,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mVehicles = vehicles;
         if (mVehicles != null && !mVehicles.isEmpty()) {
 
+            for (Vehicle v : mVehicles) {
+                Collections.sort(v.stops, new StopSequenceComparator());
+            }
+
             // This will update the busses every 5 seconds
 
             mapThread = new MapThread(MainActivity.this);
@@ -515,12 +569,23 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     }
 
     @Override
-    public void RoadResponse(Road road) {
-        mVehiclePath = mRoadManager.buildRoadOverlay(road, MainActivity.this);
+    public void RouteResponse(List<GeoPoint> waypoints) {
+        if (mVehiclePath == null) {
+            mMap.getOverlays().remove(mVehiclePath);
+        }
+        mVehiclePath = new Polyline(MainActivity.this);
+        mVehiclePath.setPoints(waypoints);
         mVehiclePath.setColor(Color.YELLOW);
-        mVehiclePath.setWidth(12);
+        mVehiclePath.setWidth(5);
 
+        mMap.getOverlays().remove(mVehicleOverlay);
+        mMap.getOverlays().remove(mStopsOverlay);
+        mMap.getOverlays().remove(mActiveStopsOverlay);
         mMap.getOverlays().add(mVehiclePath);
+        mMap.getOverlays().add(mStopsOverlay.getOverlay());
+        mMap.getOverlays().add(mActiveStopsOverlay.getOverlay());
+        mMap.getOverlays().add(mVehicleOverlay.getOverlay());
+
 
         runOnUiThread(new Runnable() {
             @Override
@@ -540,8 +605,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     public void onVehicleClick(Vehicle v) {
 
         resetVehicleInfoBox();              // Hide details for previously selected vehicle
+        resetStopInfoBox();
         removeActiveStops();                // Remove Active Stops
-        mStopsOverlay.hideAllItems();       // Temporarily hide all stops on the map
+//        mStopsOverlay.hideAllItems();       // Temporarily hide all stops on the map
         // Show the details for the selected vehicle
         displayVehicleInfo(v.stopHeadsign, v.stops.get(v.nextStop).name, v.stops.get(v.nextStop).arrivalTime);
         displayVehicleRoute(v);             // Show the route the vehicle will take
@@ -562,7 +628,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             new TransitRequest().getStopTransit(this, this, s.id);  // Show the vehicles that pass through the stop
             loadingVehiclesText.setText("Searching for vehicles that stop here ...");
             loadingVehiclesText.setVisibility(View.VISIBLE);
-            mMapController.setZoom(15);
+//            mStopsOverlay.hideAllItems();       // Temporarily hide all stops on the map
+            mStopsOverlay.hideItemsExceptActive();
         }
 
         resetStopInfoBox();                     // Hide details for the previously selected stop
@@ -647,11 +714,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         mShowingActiveStops = false;
     }
 
-    /*********
-     * Getters for PostRequest
-     *********/
-
-    public RoadManager getRoadManager() {
-        return mRoadManager;
+    private class StopSequenceComparator implements Comparator<Stop> {
+        @Override
+        public int compare(Stop o1, Stop o2) {
+            return o1.stopSequence - o2.stopSequence;
+        }
     }
 }

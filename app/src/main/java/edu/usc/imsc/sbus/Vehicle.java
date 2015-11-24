@@ -7,6 +7,8 @@ import org.osmdroid.util.GeoPoint;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -51,7 +53,8 @@ public class Vehicle {
         routeColor = null;
     }
 
-    public int determineCurrentLocationIndex() {
+    public void determineCurrentLocationIndex() {
+
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         String time = timeFormat.format(Calendar.getInstance().getTime());
 
@@ -68,15 +71,14 @@ public class Vehicle {
              */
         }
 
-        if (i == 0 || i == stops.size()) return 0;
+        if (i == 0 || i == stops.size()) return;
 
         currentLocationIndex = i - 1;
-
-        return currentLocationIndex;
+        prevStop = currentLocationIndex;
+        nextStop = i;
     }
 
     public GeoPoint getCurrentLocation() {
-//        Log.d("Vehicle", "Location Index: " + currentLocationIndex);
 
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
         String time = timeFormat.format(Calendar.getInstance().getTime());
@@ -127,6 +129,4 @@ public class Vehicle {
 
         return new GeoPoint(lat, lon);
     }
-
-    public boolean hasFocus() { return hasFocus; }
 }

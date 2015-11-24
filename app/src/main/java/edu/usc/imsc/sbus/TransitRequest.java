@@ -23,6 +23,8 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -215,8 +217,8 @@ public class TransitRequest {
         }
         reader.endObject();
 
-        DatabaseHelper dbh = new DatabaseHelper(mActivity);
-        dbh.insertVehicle(v);
+//        DatabaseHelper dbh = new DatabaseHelper(mActivity);
+//        dbh.insertVehicle(v);
 
         return v;
     }
@@ -229,6 +231,8 @@ public class TransitRequest {
             stops.add(readVehicleStop(reader));
         }
         reader.endArray();
+
+
 
         return stops;
     }

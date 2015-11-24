@@ -13,6 +13,7 @@ public abstract class ServerStatics {
     public static final String STOPS_PAGE = "/stops?page=";
     public static final String STOPS = "/stops/";
     public static final String STOPS_TRANSIT = "/transit?time=";
+    public static final String ROUTE_SHAPE = "/routes/";
 
     public static String CreateStopTransitEndpoint(String id, String time, String weekday) {
         Log.d("ServerStatics", HOST + STOPS + id + STOPS_TRANSIT + time + "&" + "weekday=" + weekday);
