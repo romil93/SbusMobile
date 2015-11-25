@@ -1,14 +1,10 @@
 package edu.usc.imsc.sbus;
 
-import android.util.Log;
-
 import org.osmdroid.util.GeoPoint;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -31,6 +27,7 @@ public class Vehicle {
     String routeColor;
 
     List<Stop> stops;
+    List<GeoPoint> waypoints;
 
     int currentLocationIndex;
     int prevStop, nextStop;
