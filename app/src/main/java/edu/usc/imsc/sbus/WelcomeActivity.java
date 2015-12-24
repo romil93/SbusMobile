@@ -38,6 +38,12 @@ public class WelcomeActivity extends Activity implements DataRequestListener {
             StopsRequest sr = new StopsRequest(RequestType.Server);
             sr.requestProgressUpdate();
             sr.getAllStops(this, this);
+
+
+            HubsRequest hr = new HubsRequest(RequestType.Server);
+            hr.requestProgressUpdate();
+            hr.getAllHubs(this, this);
+
         } else {
             Log.d("Welcome", "Already Opened");
             startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
@@ -89,6 +95,18 @@ public class WelcomeActivity extends Activity implements DataRequestListener {
 
     @Override
     public void StopsResponse(List<Stop> stops) {
+        startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
+        finish();
+    }
+
+    @Override
+    public void ListStops(List<Stop> stops) {
+        startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
+        finish();
+    }
+
+    @Override
+    public void HubsResponse(List<Hub> hubs) {
         startActivity(new Intent(WelcomeActivity.this, MainActivity.class));
         finish();
     }

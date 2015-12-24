@@ -29,6 +29,15 @@ public final class DatabaseContract {
         public static final String COLUMN_NAME_STOP_NAME = "stopName";
         public static final String COLUMN_NAME_LATITUDE = "stopLatitude";
         public static final String COLUMN_NAME_LONGITUDE = "stopLongitude";
+        public static final String COLUMN_NAME_HUB_ID = "hubId";
+    }
+
+    //    Inner class that defines Hubs table contents
+    public static abstract class DataHub implements BaseColumns {
+        public static final String TABLE_NAME = "hub";
+        public static final String COLUMN_NAME_HUB_ID = "hubId";
+        public static final String COLUMN_NAME_LATITUDE = "hubLatitude";
+        public static final String COLUMN_NAME_LONGITUDE = "hubLongitude";
     }
 
     //    Inner class that defines the Connections table (Vehicles and Stops)
@@ -48,7 +57,16 @@ public final class DatabaseContract {
                     DataStop.COLUMN_NAME_STOP_ID + TEXT_TYPE + " unique" + COMMA_SEP +
                     DataStop.COLUMN_NAME_STOP_NAME + TEXT_TYPE + COMMA_SEP +
                     DataStop.COLUMN_NAME_LATITUDE + FLOAT_TYPE + COMMA_SEP +
-                    DataStop.COLUMN_NAME_LONGITUDE + FLOAT_TYPE +
+                    DataStop.COLUMN_NAME_LONGITUDE + FLOAT_TYPE + COMMA_SEP +
+                    DataStop.COLUMN_NAME_HUB_ID + TEXT_TYPE +
+                    ")";
+
+    public static final String SQL_CREATE_HUB_ENTRIES =
+            "CREATE TABLE " + DataHub.TABLE_NAME + " (" +
+                    DataHub._ID + " INTEGER PRIMARY KEY," +
+                    DataHub.COLUMN_NAME_HUB_ID + TEXT_TYPE + " unique" + COMMA_SEP +
+                    DataHub.COLUMN_NAME_LATITUDE + FLOAT_TYPE + COMMA_SEP +
+                    DataHub.COLUMN_NAME_LONGITUDE + FLOAT_TYPE +
                     ")";
 
     public static final String SQL_CREATE_VEHICLE_ENTRIES =
@@ -71,6 +89,9 @@ public final class DatabaseContract {
 
     public static final String SQL_DELETE_STOP_ENTRIES =
             "DROP TABLE IF EXISTS " + DataStop.TABLE_NAME;
+
+    public static final String SQL_DELETE_HUB_ENTRIES =
+            "DROP TABLE IF EXISTS " + DataHub.TABLE_NAME;
 
     public static final String SQL_DELETE_VEHICLE_ENTRIES =
             "DROP TABLE IF EXISTS " + DataVehicle.TABLE_NAME;

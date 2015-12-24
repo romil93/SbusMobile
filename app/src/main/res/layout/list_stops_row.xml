@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableRow
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="50dp"
+    android:layout_width="fill_parent">
+    <TextView
+        android:id="@+id/list_stops_name"
+        android:textSize="20sp"
+        android:text="Heylo"
+        android:textStyle="bold"
+        android:gravity="center_vertical|center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_height="30dp"
+        android:layout_width="fill_parent"
+        android:clickable="true"/>
+</TableRow>

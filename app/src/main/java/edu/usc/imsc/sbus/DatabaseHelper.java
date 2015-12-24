@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.ContactsContract;
+import android.util.Log;
 
 /**
  * Created by danielCantwell on 11/2/15.
@@ -24,6 +25,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(DatabaseContract.SQL_CREATE_STOP_ENTRIES);
+        db.execSQL(DatabaseContract.SQL_CREATE_HUB_ENTRIES);
         db.execSQL(DatabaseContract.SQL_CREATE_VEHICLE_ENTRIES);
         db.execSQL(DatabaseContract.SQL_CREATE_CONNECTION_ENTRIES);
     }
@@ -33,6 +35,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // This database is only a cache for online data, so its upgrade policy is
         // to simply to discard the data and start over
         db.execSQL(DatabaseContract.SQL_DELETE_STOP_ENTRIES);
+        db.execSQL(DatabaseContract.SQL_DELETE_HUB_ENTRIES);
         db.execSQL(DatabaseContract.SQL_DELETE_VEHICLE_ENTRIES);
         db.execSQL(DatabaseContract.SQL_DELETE_CONNECTION_ENTRIES);
         onCreate(db);
@@ -69,9 +72,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME, s.name);
         values.put(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE, s.latitude);
         values.put(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE, s.longitude);
+        values.put(DatabaseContract.DataStop.COLUMN_NAME_HUB_ID, s.hubId);
 
         // Insert the new row, returning the primary key value for the new row
         return db.insert(DatabaseContract.DataStop.TABLE_NAME, "null", values);
+    }
+
+    public long insertHub(SQLiteDatabase db, Hub h) {
+
+
+//        Create a new map of values where the column names are the keys
+        ContentValues values = new ContentValues();
+        values.put(DatabaseContract.DataHub.COLUMN_NAME_HUB_ID, h.id);
+        values.put(DatabaseContract.DataHub.COLUMN_NAME_LATITUDE, h.latitude);
+        values.put(DatabaseContract.DataHub.COLUMN_NAME_LONGITUDE, h.longitude);
+
+        // Insert the new row, returning the primary key value for the new row
+        long success = db.insert(DatabaseContract.DataHub.TABLE_NAME, "null", values);
+        return success;
     }
 
     public long insertVehicle(Vehicle v) {
@@ -119,7 +137,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 DatabaseContract.DataStop.COLUMN_NAME_STOP_ID,
                 DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME,
                 DatabaseContract.DataStop.COLUMN_NAME_LATITUDE,
-                DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE
+                DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE,
+                DatabaseContract.DataStop.COLUMN_NAME_HUB_ID
         };
 
         return db.query(
@@ -127,6 +146,81 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 projection,                             // the columns to return
                 null,                                   // the columns for the WHERE clause
                 null,                                   // the values for the WHERE clause
+                null,                                   // don't group the rows
+                null,                                   // don't filter by row group
+                null                                    // the sort order
+        );
+    }
+
+    public Cursor retrieveAllHubs() {
+//        Gets the data repository in read mode
+        SQLiteDatabase db = this.getReadableDatabase();
+
+//        Defines a projection that specifies which columns from
+//        the database you will actually use after this query
+        String[] projection = {
+                DatabaseContract.DataHub.COLUMN_NAME_HUB_ID,
+                DatabaseContract.DataHub.COLUMN_NAME_LATITUDE,
+                DatabaseContract.DataHub.COLUMN_NAME_LONGITUDE
+        };
+
+        return db.query(
+                DatabaseContract.DataHub.TABLE_NAME,   // the table to query
+                projection,                             // the columns to return
+                null,                                   // the columns for the WHERE clause
+                null,                                   // the values for the WHERE clause
+                null,                                   // don't group the rows
+                null,                                   // don't filter by row group
+                null                                    // the sort order
+        );
+    }
+
+    public Cursor retreiveAllStopsInfo() {
+        SQLiteDatabase db = this.getReadableDatabase();
+
+//        Defines a projection that specifies which columns from
+//        the database you will actually use after this query
+        String[] projection = {
+                DatabaseContract.DataStop.COLUMN_NAME_STOP_ID,
+                DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME,
+                DatabaseContract.DataStop.COLUMN_NAME_LATITUDE,
+                DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE,
+                DatabaseContract.DataStop.COLUMN_NAME_HUB_ID
+        };
+
+        return db.query(
+                DatabaseContract.DataStop.TABLE_NAME,   // the table to query
+                projection,                             // the columns to return
+                null,                            // the columns for the WHERE clause
+                null,                     // the values for the WHERE clause
+                null,                                   // don't group the rows
+                null,                                   // don't filter by row group
+                null                                    // the sort order
+        );
+    }
+
+
+    public Cursor retrieveAllStopsForHub(String id) {
+//        Gets the data repository in read mode
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Log.d("Came in here", "Hello");
+
+//        Defines a projection that specifies which columns from
+//        the database you will actually use after this query
+        String[] projection = {
+                DatabaseContract.DataStop.COLUMN_NAME_STOP_ID,
+                DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME,
+                DatabaseContract.DataStop.COLUMN_NAME_LATITUDE,
+                DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE,
+                DatabaseContract.DataStop.COLUMN_NAME_HUB_ID
+        };
+
+        return db.query(
+                DatabaseContract.DataStop.TABLE_NAME,   // the table to query
+                projection,                             // the columns to return
+                DatabaseContract.DataStop.COLUMN_NAME_HUB_ID + " = " + id,                              // the columns for the WHERE clause
+                null,                     // the values for the WHERE clause
                 null,                                   // don't group the rows
                 null,                                   // don't filter by row group
                 null                                    // the sort order

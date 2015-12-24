@@ -15,6 +15,9 @@ public abstract class ServerStatics {
     public static final String STOPS_TRANSIT = "/transit?time=";
     public static final String ROUTE_SHAPE = "/routes/";
 
+    public static final String HUB_COUNT = "/hubs/count";
+    public static final String HUB_PAGE = "/hubs?page=";
+
     public static String CreateStopTransitEndpoint(String id, String time, String weekday) {
         Log.d("ServerStatics", HOST + STOPS + id + STOPS_TRANSIT + time + "&" + "weekday=" + weekday);
         return HOST + STOPS + id + STOPS_TRANSIT + time + "&" + "weekday=" + weekday;

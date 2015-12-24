@@ -3,28 +3,23 @@ package edu.usc.imsc.sbus;
 import org.osmdroid.util.GeoPoint;
 
 /**
- * Created by danielCantwell on 3/24/15.
+ * Created by romil93 on 18/12/15.
  */
+public class Hub {
 
-public class Stop {
-
-    public Stop() {
+    public Hub() {
 
     }
 
-    public Stop(String id, String name, double latitude, double longitude, String hubId) {
+    public Hub(String id, double latitude, double longitude) {
         this.id = id;
-        this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.hubId = hubId;
     }
 
     public String id;
-    public String hubId;
-    public String stopHeadsign;
-    public int stopSequence;
-    public String name;
+    public String hubHeadsign;
+    public int hubSequence;
     public double latitude;
     public double longitude;
 

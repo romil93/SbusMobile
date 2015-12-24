@@ -3,6 +3,7 @@ package edu.usc.imsc.sbus;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.ResourceProxy;
@@ -13,10 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by danielCantwell on 11/19/15.
- * Copyright (c) Cantwell Code 2015. All Rights Reserved
+ * Created by romil93 on 18/12/15.
  */
-public class StopsOverlay extends MapOverlay {
+public class HubsOverlay extends MapOverlay {
 
     public enum Type {
         Normal, Active
@@ -24,37 +24,41 @@ public class StopsOverlay extends MapOverlay {
 
     private Type mType;
 
-    public StopsOverlay(MainActivity context, MapClickListener listener, Type type) {
+    public HubsOverlay(MainActivity context, MapClickListener listener, Type type) {
         super();
         mContext = context;
         mListener = listener;
         mHidden = false;
         mType = type;
         mItems = new ArrayList<>();
+
         ArrayList<OverlayItem> items = new ArrayList<>();
         ResourceProxy resourceProxy = new DefaultResourceProxyImpl(mContext);
 
-        mIcon = mContext.getResources().getDrawable(mType == Type.Normal ? StopOverlayItem.iconId : R.drawable.stop_large);
+        // mIcon = mContext.getResources().getDrawable(mType == Type.Normal ? HubOverlayItem.iconId : R.drawable.stop_large);
+        mIcon = mContext.getResources().getDrawable(R.drawable.stop_large);
 
-        mActiveIcon = mContext.getResources().getDrawable(mType == Type.Normal ? StopOverlayItem.focusedIconId : R.drawable.stop_active_large);
+        // mActiveIcon = mContext.getResources().getDrawable(mType == Type.Normal ? HubOverlayItem.focusedIconId : R.drawable.stop_active_large);
+        mActiveIcon = mContext.getResources().getDrawable(R.drawable.stop_active_large);
 
         mOverlay = new ItemizedIconOverlay<>(
                 items, mIcon,
                 new ItemizedIconOverlay.OnItemGestureListener<OverlayItem>() {
                     @Override
                     public boolean onItemSingleTapUp(int i, OverlayItem myOverlayItem) {
-                        return handleStopClick((StopOverlayItem) myOverlayItem);
+                        return handleHubClick((HubOverlayItem) myOverlayItem);
                     }
 
                     @Override
                     public boolean onItemLongPress(int i, OverlayItem myOverlayItem) {
-                        return handleLongStopClick((StopOverlayItem) myOverlayItem);
+                        Toast.makeText(mContext, "Welcome to long press", Toast.LENGTH_SHORT).show();
+                        return true;
                     }
                 }, resourceProxy);
     }
 
-    private boolean handleStopClick(StopOverlayItem item) {
-        Stop s = item.stop;
+    private boolean handleHubClick(HubOverlayItem item) {
+        Hub h = item.hub;
 
         if (mActiveItem != null) {
             mActiveItem.setMarker(mIcon);
@@ -63,22 +67,7 @@ public class StopsOverlay extends MapOverlay {
         mActiveItem = item;
         mActiveItem.setMarker(mActiveIcon);
 
-        mListener.onStopClick(s);
-
-        return true;
-    }
-
-    private boolean handleLongStopClick(StopOverlayItem item) {
-        Stop s = item.stop;
-
-        if(mActiveItem != null) {
-            mActiveItem.setMarker(mIcon);
-        }
-
-        mActiveItem = item;
-        mActiveItem.setMarker(mActiveIcon);
-
-        mListener.onLongStopClick(s);
+        mListener.onHubClick(h);
 
         return true;
     }

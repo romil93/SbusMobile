@@ -24,52 +24,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by danielCantwell on 11/2/15.
- * Copyright (c) Cantwell Code 2015. All Rights Reserved
+ * Created by romil93 on 18/12/15.
  */
-public class StopsRequest {
+public class HubsRequest {
 
     private final RequestType mRequestType;
     private Activity mActivity;
     private DataRequestListener mListener;
     private boolean mProgressUpdate;
-    private String hubId;
 
-    public StopsRequest(RequestType rt) {
+    public HubsRequest(RequestType rt) {
         mRequestType = rt;
         mProgressUpdate = false;
     }
 
-    public StopsRequest(RequestType rt, String id) {
-        mRequestType = rt;
-        hubId = id;
-    }
-
-    public void getAllStops(Activity activity, DataRequestListener listener) {
+    public void getAllHubs(Activity activity, DataRequestListener listener) {
         mActivity = activity;
         mListener = listener;
 
-        GetAllStops task = new GetAllStops();
+        GetAllHubs task = new GetAllHubs();
         task.execute();
     }
-
-    public void getAllStopsFromHub(Activity activity, DataRequestListener listener) {
-        mActivity = activity;
-        mListener = listener;
-
-        GetAllStopsForHub task = new GetAllStopsForHub();
-        task.execute();
-    }
-
 
     /**
-     * GET ALL STOPS
+     * GET ALL HUBS
      * AJAX call to the API
      */
 
-    private class GetAllStops extends AsyncTask<Void, Void, Void> {
+    private class GetAllHubs extends AsyncTask<Void, Void, Void> {
 
-        private final String LOG_TAG = "GetAllStops";
+        private final String LOG_TAG = "GetAllHubs";
 
         @Override
         protected Void doInBackground(Void... params) {
@@ -77,30 +61,31 @@ public class StopsRequest {
             // Local Stops Request
             if (mRequestType.equals(RequestType.Local)) {
                 DatabaseHelper dbh = new DatabaseHelper(mActivity);
-                Cursor cursor = dbh.retrieveAllStops();
-                List<Stop> stops = new ArrayList<>();
+                Cursor cursor = dbh.retrieveAllHubs();
+                List<Hub> hubs = new ArrayList<>();
 
                 if (cursor.moveToFirst()) {
                     do {
-                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
-                        String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
-                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
-                        String hubId = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_HUB_ID));
+                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataHub.COLUMN_NAME_HUB_ID));
+                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataHub.COLUMN_NAME_LATITUDE));
+                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataHub.COLUMN_NAME_LONGITUDE));
 
-                        stops.add(new Stop(id, name, lat, lon, hubId));
+                        hubs.add(new Hub(id, lat, lon));
                     } while (cursor.moveToNext());
                 }
 
                 cursor.close();
                 dbh.close();
 
-                mListener.StopsResponse(stops);
+                mListener.HubsResponse(hubs);
 
                 // Server Stops Request
             } else if (mRequestType.equals(RequestType.Server)) {
 
                 DefaultHttpClient client = new DefaultHttpClient();
+
+                //Loading Hubs into the local sqlite database
+
                 HttpGet httpGetCountStop = new HttpGet(ServerStatics.HOST + ServerStatics.STOPS_COUNT);
                 HttpGet httpGetCountHub = new HttpGet(ServerStatics.HOST + ServerStatics.HUB_COUNT);
 
@@ -138,12 +123,12 @@ public class StopsRequest {
                     if (mProgressUpdate) ((WelcomeActivity) mActivity).setProgressMax(pageCountHub + pageCountStop);
 
                     /* For each page of stops, load the stops */
-                    for (int i = 1; i <= pageCountStop; i++) {
+                    for (int i = 1; i <= pageCountHub; i++) {
 
 //                        Log.d(LOG_TAG, "Reading page " + String.valueOf(i) + " of stops");
 
-                        HttpGet httpGetStopsPage = new HttpGet(ServerStatics.HOST + ServerStatics.STOPS_PAGE + String.valueOf(i));
-                        HttpResponse execute = client.execute(httpGetStopsPage);
+                        HttpGet httpGetHubsPage = new HttpGet(ServerStatics.HOST + ServerStatics.HUB_PAGE + String.valueOf(i));
+                        HttpResponse execute = client.execute(httpGetHubsPage);
                         InputStream content = execute.getEntity().getContent();
 
                         DataInputStream data = new DataInputStream(content);
@@ -153,32 +138,30 @@ public class StopsRequest {
                         SQLiteDatabase db = dbh.beginWriting();
 
                         // Create pattern for the scanner to search for in the input stream
-                        Pattern regex = Pattern.compile("\"([^\"]+)\",\"([^\"]+)\",([^,]+),([^,]+),\"([^\"]+)\",\\d+");
+                        Pattern regex = Pattern.compile("\"([^\"]+)\",([^,]+),([^,]+),\\d+");
                         Scanner sc = new Scanner(data);
                         sc.useDelimiter("\\[");
 
                         if (mProgressUpdate) {
-                            ((WelcomeActivity) mActivity).setProgressCurrent(i);
+                            ((WelcomeActivity) mActivity).setProgressCurrent(i + pageCountStop);
 //                            Log.d(LOG_TAG, "updating progress");
                         }
 
                         while (sc.hasNext()) {
-                            String stopData = sc.next();
+                            String hubData = sc.next();
 
-                            Matcher matcher = regex.matcher(stopData);
+                            Matcher matcher = regex.matcher(hubData);
 
                             if (matcher.find()) {
-                                String stopId = matcher.group(1);
-                                String stopName = matcher.group(2);
-                                String stopLat = matcher.group(3);
-                                String stopLon = matcher.group(4);
-                                String hubId = matcher.group(5);
+                                String hubId = matcher.group(1);
+                                String hubLat = matcher.group(2);
+                                String hubLon = matcher.group(3);
 
                                 // Enter stop data into database
-                                Stop s = new Stop(stopId, stopName, Double.parseDouble(stopLat), Double.parseDouble(stopLon), hubId);
-                                dbh.insertStop(db, s);
+                                Hub h = new Hub(hubId, Double.parseDouble(hubLat), Double.parseDouble(hubLon));
+                                dbh.insertHub(db, h);
                             } else {
-                                Log.d(LOG_TAG, "Stop Data: " + stopData);
+                                Log.d(LOG_TAG, "Hub Data: " + hubData);
                             }
                         }
 
@@ -195,46 +178,10 @@ public class StopsRequest {
                     e.printStackTrace();
                 }
 
-                mListener.StopsResponse(null);
+
+                mListener.HubsResponse(null);
             }
 
-            return null;
-        }
-    }
-
-    private class GetAllStopsForHub extends AsyncTask<Void, Void, Void> {
-
-        private final String LOG_TAG = "GetAllStopsForHub";
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            // Local Stops Request
-            if (mRequestType.equals(RequestType.Local)) {
-                DatabaseHelper dbh = new DatabaseHelper(mActivity);
-                Cursor cursor = dbh.retrieveAllStopsForHub(hubId);
-                List<Stop> stops = new ArrayList<>();
-
-                if (cursor.moveToFirst()) {
-                    do {
-                        String id = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_ID));
-                        String name = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_STOP_NAME));
-                        double lat = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LATITUDE));
-                        double lon = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_LONGITUDE));
-                        String hubIdInternal = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseContract.DataStop.COLUMN_NAME_HUB_ID));
-
-                        stops.add(new Stop(id, name, lat, lon, hubIdInternal));
-                    } while (cursor.moveToNext());
-                }
-
-                cursor.close();
-
-                Log.d(LOG_TAG,"Stops count " + stops.size());
-
-                mListener.StopsResponse(stops);
-
-                // Server Stops Request
-            }
             return null;
         }
     }
