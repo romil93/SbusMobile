@@ -585,7 +585,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     }
 
     @Override
-    public void ListStops(List<Stop> stops) {
+    public void ListStops(final List<Stop> stops) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -598,11 +598,20 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         {
             // Inflate your row "template" and fill out the fields.
             TableRow temp_row = (TableRow) LayoutInflater.from(MainActivity.this).inflate(R.layout.list_stops_row, null);
-            ((TextView)temp_row.findViewById(R.id.list_stops_name)).setText(stops.get(i).name);
+            ((Button)temp_row.findViewById(R.id.list_stops_name)).setText(stops.get(i).name);
+
+            final int finalI = i;
+
+            temp_row.setOnClickListener(new View.OnClickListener(){
+
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(MainActivity.this, stops.get(finalI).name, Toast.LENGTH_SHORT).show();
+                }
+            });
 
             row.add(temp_row);
 
-            final int finalI = i;
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -611,31 +620,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             });
         }
         listStopTable.requestLayout();
-//        for(int i = 0; i < stops.size(); i++) {
-//            listStopTableRow = new TableRow(this);
-//            listStopName = new TextView(this);
-//            listStopTableRow.setLayoutParams(new TableRow.LayoutParams(
-//                    TableRow.LayoutParams.MATCH_PARENT,
-//                    TableRow.LayoutParams.WRAP_CONTENT));
-//
-//            listStopName.setGravity(Gravity.CENTER_VERTICAL|Gravity.CENTER_HORIZONTAL);
-//            listStopName.setTextSize(TypedValue.COMPLEX_UNIT_DIP,20);
-//
-//            float scale = getResources().getDisplayMetrics().density;
-//            int dpAsPixels = (int) (10*scale + 0.5f);
-//
-//            listStopName.setPadding(0,dpAsPixels,0,dpAsPixels);
-//            listStopName.setText(stops.get(i).name);
-//
-//            runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//
-//                    listStopTableRow.addView(listStopName);
-//                    listStopTable.addView(listStopTableRow, new TableLayout.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-//                }
-//            });
-//        }
     }
 
     @Override
@@ -786,7 +770,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
             mMap.getOverlays().remove(mVehiclePath);// Hide the active vehicle route
 
             resetVehicleInfoBox();                  // Hide details for the previously selected vehicle
-
+            mHubsOverlay.hideAllItems();
             new TransitRequest().getStopTransit(this, this, s.id);  // Show the vehicles that pass through the stop
             loadingVehiclesText.setText("Searching for vehicles that stop here ...");
             loadingVehiclesText.setVisibility(View.VISIBLE);
@@ -825,9 +809,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         resetStopInfoBox();                     // Hide details for the previously selected stop
         resetHubInfoBox();
         mStopsOverlay.clearItems();
-        //new StopsRequest(RequestType.Local, h.id).getAllStopsFromHub(MainActivity.this, MainActivity.this);
-        listStop.setVisibility(View.VISIBLE);
-        new ListStopsRequest(RequestType.Local, h.id).getAllStopsFromHub(MainActivity.this, MainActivity.this);
+        new StopsRequest(RequestType.Local, h.id).getAllStopsFromHub(MainActivity.this, MainActivity.this);
+//        listStop.setVisibility(View.VISIBLE);
+//        new ListStopsRequest(RequestType.Local, h.id).getAllStopsFromHub(MainActivity.this, MainActivity.this);
         mMap.invalidate();
     }
 
